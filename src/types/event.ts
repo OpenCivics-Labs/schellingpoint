@@ -87,6 +87,7 @@ export interface EventRow {
   last_schedule_change_at: string | null;
   ticketing_enabled: boolean;
   stripe_account_id: string | null;
+  suggested_topics: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -124,6 +125,7 @@ export interface Event {
   lastScheduleChangeAt: Date | null;
   ticketingEnabled: boolean;
   stripeAccountId: string | null;
+  suggestedTopics: string[];
 }
 
 // Event member relationship
@@ -170,5 +172,9 @@ export function transformEventRow(row: EventRow): Event {
     lastScheduleChangeAt: row.last_schedule_change_at ? new Date(row.last_schedule_change_at) : null,
     ticketingEnabled: row.ticketing_enabled,
     stripeAccountId: row.stripe_account_id,
+    suggestedTopics: row.suggested_topics || [
+      'Governance', 'DeFi', 'DAOs', 'NFTs', 'Privacy',
+      'Security', 'Public Goods', 'Developer Tools', 'Community', 'Education'
+    ],
   };
 }

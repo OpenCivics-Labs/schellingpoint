@@ -140,6 +140,7 @@ function transformToEventInsert(
     last_schedule_change_at: null,
     ticketing_enabled: false,
     stripe_account_id: null,
+    suggested_topics: null, // Will use defaults
   };
 }
 

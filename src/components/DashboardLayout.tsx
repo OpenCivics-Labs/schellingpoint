@@ -355,6 +355,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           userId={user.id}
           email={user.email || ''}
           onComplete={handleOnboardingComplete}
+          suggestedTopics={event.suggestedTopics}
         />
       )}
 

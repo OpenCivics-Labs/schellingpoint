@@ -144,7 +144,7 @@ export function NotificationBell() {
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-80 p-0" align="end">
+      <PopoverContent className="w-80 p-0 bg-background border shadow-lg" align="end">
         {/* Header */}
         <div className="flex items-center justify-between p-3 border-b border-border">
           <h3 className="font-semibold text-sm">Notifications</h3>

@@ -49,7 +49,8 @@ const TIME_PREFERENCES = [
   { value: 'sunday_pm', label: 'Sunday PM' },
 ]
 
-const suggestedTags = [
+// Default tags - will be overridden by event's suggestedTopics
+const DEFAULT_TAGS = [
   'governance', 'defi', 'nfts', 'infrastructure', 'security',
   'community', 'education', 'tooling', 'research', 'design'
 ]
@@ -151,6 +152,14 @@ export default function ProposePage() {
     if (event.allowedDurations.length === 0) return durations
     return durations.filter(d => event.allowedDurations.includes(d.value))
   }, [event.allowedDurations])
+
+  // Use event's suggested topics if available, with lowercase for tag matching
+  const suggestedTags = React.useMemo(() => {
+    const topics = event.suggestedTopics && event.suggestedTopics.length > 0
+      ? event.suggestedTopics
+      : DEFAULT_TAGS
+    return topics.map(t => t.toLowerCase())
+  }, [event.suggestedTopics])
 
   // Fetch tracks for this event
   React.useEffect(() => {

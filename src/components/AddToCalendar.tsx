@@ -110,10 +110,10 @@ export function AddToCalendar({
       <DropdownMenuTrigger asChild>
         <Button variant={buttonVariant} size={size}>
           <Calendar className="h-4 w-4" />
-          {variant === 'default' && (
+          {variant !== 'icon' && (
             <>
-              <span className="ml-2">Add to Calendar</span>
-              <ChevronDown className="h-4 w-4 ml-1" />
+              <span className="ml-2 hidden sm:inline">Add to Calendar</span>
+              <ChevronDown className="h-4 w-4 ml-1 hidden sm:inline" />
             </>
           )}
         </Button>

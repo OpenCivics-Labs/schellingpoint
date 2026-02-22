@@ -33,9 +33,11 @@ interface OnboardingModalProps {
   userId: string
   email: string
   onComplete: () => void
+  /** Event-specific suggested topics (optional, falls back to defaults) */
+  suggestedTopics?: string[]
 }
 
-const suggestedInterests = [
+const DEFAULT_INTERESTS = [
   'Governance',
   'DeFi',
   'DAOs',
@@ -107,7 +109,8 @@ const introSlides = [
   },
 ]
 
-export function OnboardingModal({ userId, email, onComplete }: OnboardingModalProps) {
+export function OnboardingModal({ userId, email, onComplete, suggestedTopics }: OnboardingModalProps) {
+  const suggestedInterests = suggestedTopics && suggestedTopics.length > 0 ? suggestedTopics : DEFAULT_INTERESTS
   const [step, setStep] = React.useState(1)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)

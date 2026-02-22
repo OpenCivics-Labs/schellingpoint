@@ -56,6 +56,17 @@ export function RSVPButton({
   const [localRsvpCount, setLocalRsvpCount] = React.useState(rsvpCount)
   const [localWaitlistCount, setLocalWaitlistCount] = React.useState(waitlistCount)
 
+  // Sync with props when they change (e.g., after async fetch)
+  React.useEffect(() => {
+    setStatus(initialStatus)
+    setWaitlistPosition(initialWaitlistPosition)
+  }, [initialStatus, initialWaitlistPosition])
+
+  React.useEffect(() => {
+    setLocalRsvpCount(rsvpCount)
+    setLocalWaitlistCount(waitlistCount)
+  }, [rsvpCount, waitlistCount])
+
   // Determine if there's room
   const hasRoom = capacity === null || localRsvpCount < capacity
   const spotsLeft = capacity !== null ? capacity - localRsvpCount : null
