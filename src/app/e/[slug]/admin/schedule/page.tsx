@@ -498,7 +498,7 @@ export default function AdminSchedulePage() {
   }
 
   // Undo last action
-  const handleUndo = async () => {
+  const handleUndo = React.useCallback(async () => {
     if (historyIndex < 0) return
 
     const action = history[historyIndex]
@@ -568,10 +568,10 @@ export default function AdminSchedulePage() {
     } catch (err) {
       console.error('Undo error:', err)
     }
-  }
+  }, [historyIndex, history, event.id])
 
   // Redo last undone action
-  const handleRedo = async () => {
+  const handleRedo = React.useCallback(async () => {
     if (historyIndex >= history.length - 1) return
 
     const action = history[historyIndex + 1]
@@ -610,7 +610,7 @@ export default function AdminSchedulePage() {
     } catch (err) {
       console.error('Redo error:', err)
     }
-  }
+  }, [historyIndex, history, event.id])
 
   // Reset day (unschedule all sessions for selected day)
   const handleResetDay = async () => {
@@ -798,7 +798,7 @@ export default function AdminSchedulePage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [historyIndex, history])
+  }, [handleUndo, handleRedo])
 
   if (authLoading || roleLoading || isLoading) {
     return (

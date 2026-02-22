@@ -41,6 +41,7 @@ export interface Session {
   venue?: { id: string; name: string } | null
   time_slot?: { id: string; label: string; start_time: string } | null
   track?: { id: string; name: string; color: string } | null
+  cohosts?: { user_id: string }[] | null
 }
 
 export interface Track {

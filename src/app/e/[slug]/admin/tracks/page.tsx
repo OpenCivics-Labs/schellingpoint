@@ -21,6 +21,7 @@ import { AdminNav } from '@/components/admin/AdminNav'
 import { useAuth } from '@/hooks/useAuth'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
 import { cn } from '@/lib/utils'
+import { getAccessToken } from '@/lib/supabase/client'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -48,20 +49,6 @@ interface TrackFormData {
   name: string
   color: string
   description: string
-}
-
-function getAccessToken(): string | null {
-  const storageKey = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`
-  const stored = localStorage.getItem(storageKey)
-  if (stored) {
-    try {
-      const session = JSON.parse(stored)
-      return session?.access_token || null
-    } catch {
-      return null
-    }
-  }
-  return null
 }
 
 function generateSlug(name: string): string {
@@ -245,6 +232,22 @@ export default function AdminTracksPage() {
     setIsDeleting(true)
 
     try {
+      // First, clear track_id from any sessions using this track
+      await fetch(
+        `${SUPABASE_URL}/rest/v1/sessions?track_id=eq.${trackId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          body: JSON.stringify({ track_id: null }),
+        }
+      )
+
+      // Then delete the track
       const response = await fetch(
         `${SUPABASE_URL}/rest/v1/tracks?id=eq.${trackId}`,
         {
@@ -502,7 +505,12 @@ export default function AdminTracksPage() {
                     </Badge>
 
                     {deleteConfirm === track.id ? (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
+                        {(track.session_count || 0) > 0 && (
+                          <span className="text-xs text-destructive">
+                            {track.session_count} sessions will lose their track
+                          </span>
+                        )}
                         <Button
                           variant="destructive"
                           size="sm"
@@ -530,6 +538,7 @@ export default function AdminTracksPage() {
                           size="sm"
                           onClick={() => setDeleteConfirm(track.id)}
                           className="text-destructive hover:text-destructive"
+                          title={(track.session_count || 0) > 0 ? `${track.session_count} sessions use this track` : 'Delete track'}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

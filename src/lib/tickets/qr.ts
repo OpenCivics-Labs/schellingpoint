@@ -1,10 +1,23 @@
 import * as jose from 'jose'
 import QRCode from 'qrcode'
 
-// JWT secret for ticket QR codes
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.TICKET_QR_SECRET || process.env.NEXTAUTH_SECRET || 'ticket-qr-secret-key'
-)
+// JWT secret for ticket QR codes - must be set in production
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.TICKET_QR_SECRET || process.env.NEXTAUTH_SECRET
+  if (!secret) {
+    throw new Error('TICKET_QR_SECRET or NEXTAUTH_SECRET environment variable must be set for ticket QR codes')
+  }
+  return new TextEncoder().encode(secret)
+}
+
+// Lazy initialization to allow startup without env vars (for pages that don't use QR)
+let _jwtSecret: Uint8Array | null = null
+function getSecret(): Uint8Array {
+  if (!_jwtSecret) {
+    _jwtSecret = getJwtSecret()
+  }
+  return _jwtSecret
+}
 
 // JWT expiration (90 days)
 const JWT_EXPIRATION = '90d'
@@ -33,7 +46,7 @@ export async function generateTicketToken(payload: Omit<TicketQRPayload, 'issued
     .setIssuedAt()
     .setExpirationTime(JWT_EXPIRATION)
     .setSubject(payload.ticketId)
-    .sign(JWT_SECRET)
+    .sign(getSecret())
 
   return jwt
 }
@@ -43,7 +56,7 @@ export async function generateTicketToken(payload: Omit<TicketQRPayload, 'issued
  */
 export async function verifyTicketToken(token: string): Promise<TicketQRPayload | null> {
   try {
-    const { payload } = await jose.jwtVerify(token, JWT_SECRET)
+    const { payload } = await jose.jwtVerify(token, getSecret())
 
     return {
       ticketId: payload.ticketId as string,

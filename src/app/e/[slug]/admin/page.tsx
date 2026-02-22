@@ -98,7 +98,7 @@ export default function AdminPage() {
       try {
         const [sessionsRes, venuesRes, timeSlotsRes, tracksRes] = await Promise.all([
           fetch(
-            `${SUPABASE_URL}/rest/v1/sessions?event_id=eq.${event.id}&select=*,venue:venues(id,name),time_slot:time_slots(id,label,start_time),track:tracks(id,name,color)&order=total_votes.desc`,
+            `${SUPABASE_URL}/rest/v1/sessions?event_id=eq.${event.id}&select=*,venue:venues(id,name),time_slot:time_slots(id,label,start_time),track:tracks(id,name,color),cohosts:session_cohosts(user_id)&order=total_votes.desc`,
             {
               headers: {
                 'apikey': SUPABASE_KEY,
@@ -211,6 +211,11 @@ export default function AdminPage() {
     // Has time preference
     if (filters.hasTimePreference === true) {
       result = result.filter((s) => s.time_preferences && s.time_preferences.length > 0)
+    }
+
+    // Has co-hosts
+    if (filters.hasCohosts === true) {
+      result = result.filter((s) => s.cohosts && s.cohosts.length > 0)
     }
 
     // Sort

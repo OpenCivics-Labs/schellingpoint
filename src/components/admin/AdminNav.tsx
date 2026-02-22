@@ -13,6 +13,7 @@ import {
   Tags,
   Ticket,
   DollarSign,
+  Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -34,6 +35,7 @@ export function AdminNav({ eventSlug, canManageSchedule, canManageVenues }: Admi
   const isTracks = pathname === `${baseUrl}/tracks`
   const isTickets = pathname === `${baseUrl}/tickets`
   const isRevenue = pathname === `${baseUrl}/revenue`
+  const isMembers = pathname === `${baseUrl}/members`
 
   const navItems = [
     {
@@ -77,6 +79,13 @@ export function AdminNav({ eventSlug, canManageSchedule, canManageVenues }: Admi
       icon: <DollarSign className="h-4 w-4" />,
       active: isRevenue,
       show: true, // Owners/admins can view revenue
+    },
+    {
+      label: 'Members',
+      href: `${baseUrl}/members`,
+      icon: <Users className="h-4 w-4" />,
+      active: isMembers,
+      show: true, // Owners/admins can manage members
     },
     {
       label: 'Communications',

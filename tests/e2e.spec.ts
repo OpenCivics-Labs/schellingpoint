@@ -90,7 +90,7 @@ async function setupAuthenticatedSession(page: Page, session: { accessToken: str
   }
 
   // Set localStorage before navigation
-  await page.addInitScript(({ key, value }) => {
+  await page.addInitScript(({ key, value }: { key: string; value: unknown }) => {
     localStorage.setItem(key, JSON.stringify(value))
   }, { key: storageKey, value: sessionData })
 }

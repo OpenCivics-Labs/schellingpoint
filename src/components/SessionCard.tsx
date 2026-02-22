@@ -6,6 +6,7 @@ import { Heart, Mic, Wrench, MessageSquare, Users, Monitor, Plus, Minus, MapPin,
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { RSVPIndicator } from '@/components/RSVPButton'
 import { cn, votesToCredits, nextVoteCost } from '@/lib/utils'
 
 const formatIcons: Record<string, React.ReactNode> = {
@@ -37,7 +38,7 @@ interface SessionCardProps {
     topic_tags: string[] | null
     total_votes: number
     status: string
-    venue?: { name: string } | null
+    venue?: { name: string; capacity?: number | null } | null
     time_slot?: { label: string; start_time: string } | null
     is_self_hosted?: boolean
     custom_location?: string | null
@@ -45,6 +46,8 @@ interface SessionCardProps {
     self_hosted_end_time?: string | null
     track?: { id: string; name: string; color: string | null } | null
     cohosts?: { profile: { display_name: string | null } | null }[] | null
+    rsvp_count?: number
+    waitlist_count?: number
   }
   eventSlug: string
   userVotes?: number
@@ -54,6 +57,8 @@ interface SessionCardProps {
   onToggleFavorite?: (sessionId: string) => void
   showVoting?: boolean
   isLoggedIn?: boolean
+  /** User's RSVP status for this session */
+  userRsvpStatus?: 'confirmed' | 'waitlist' | null
 }
 
 export function SessionCard({
@@ -66,6 +71,7 @@ export function SessionCard({
   onToggleFavorite,
   showVoting = true,
   isLoggedIn = false,
+  userRsvpStatus,
 }: SessionCardProps) {
   const currentCredits = votesToCredits(userVotes)
   const costToAdd = nextVoteCost(userVotes)
@@ -198,9 +204,19 @@ export function SessionCard({
 
           {/* Vote stats */}
           <div className="flex items-center justify-between pt-3 border-t border-border/50">
-            <div className="text-sm">
-              <span className="font-semibold text-primary neon-text">{session.total_votes}</span>
-              <span className="text-muted-foreground"> total votes</span>
+            <div className="flex items-center gap-4">
+              <div className="text-sm">
+                <span className="font-semibold text-primary neon-text">{session.total_votes}</span>
+                <span className="text-muted-foreground"> total votes</span>
+              </div>
+              {/* RSVP indicator for scheduled sessions */}
+              {session.status === 'scheduled' && session.venue?.capacity && (
+                <RSVPIndicator
+                  rsvpCount={session.rsvp_count || 0}
+                  capacity={session.venue.capacity}
+                  userStatus={userRsvpStatus}
+                />
+              )}
             </div>
 
             {/* Voting controls */}

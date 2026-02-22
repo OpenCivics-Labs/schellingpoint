@@ -22,6 +22,8 @@ import { Badge } from '@/components/ui/badge'
 import { AdminNav } from '@/components/admin/AdminNav'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
 import { cn } from '@/lib/utils'
+import { getAccessToken } from '@/lib/supabase/client'
+import { formatPrice } from '@/lib/payments/stripe'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -41,27 +43,6 @@ interface TicketTier {
   allows_proposals: boolean
   allows_voting: boolean
   vote_credits_override: number | null
-}
-
-function getAccessToken(): string | null {
-  const storageKey = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`
-  const stored = localStorage.getItem(storageKey)
-  if (stored) {
-    try {
-      const session = JSON.parse(stored)
-      return session?.access_token || null
-    } catch {
-      return null
-    }
-  }
-  return null
-}
-
-function formatPrice(cents: number, currency: string): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency.toUpperCase(),
-  }).format(cents / 100)
 }
 
 function formatDate(dateStr: string | null): string {

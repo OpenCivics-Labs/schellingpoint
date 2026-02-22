@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
 import { useEvent } from '@/contexts/EventContext'
 import { cn } from '@/lib/utils'
+import { getAccessToken } from '@/lib/supabase/client'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -31,20 +32,6 @@ interface RSVPButtonProps {
   showCapacity?: boolean
   /** Callback when RSVP changes */
   onRSVPChange?: (status: 'confirmed' | 'waitlist' | null) => void
-}
-
-function getAccessToken(): string | null {
-  const storageKey = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`
-  const stored = localStorage.getItem(storageKey)
-  if (stored) {
-    try {
-      const session = JSON.parse(stored)
-      return session?.access_token || null
-    } catch {
-      return null
-    }
-  }
-  return null
 }
 
 export function RSVPButton({

@@ -36,6 +36,7 @@ import { DashboardLayout } from '@/components/DashboardLayout'
 import { EditSessionModal } from '@/components/EditSessionModal'
 import { ManageCohostsSection } from '@/components/ManageCohostsSection'
 import { AddToCalendar } from '@/components/AddToCalendar'
+import { RSVPButton } from '@/components/RSVPButton'
 import { useAuth } from '@/hooks/useAuth'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
 import { votesToCredits } from '@/lib/utils'
@@ -98,6 +99,8 @@ export function SessionDetailClient({ sessionId, initialSession }: SessionDetail
   const [showEditModal, setShowEditModal] = React.useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false)
   const [isDeleting, setIsDeleting] = React.useState(false)
+  const [userRsvpStatus, setUserRsvpStatus] = React.useState<'confirmed' | 'waitlist' | null>(null)
+  const [userWaitlistPosition, setUserWaitlistPosition] = React.useState<number | null>(null)
   const hostCardRef = React.useRef<HTMLDivElement>(null)
 
   // Close host card when clicking outside
@@ -202,6 +205,25 @@ export function SessionDetailClient({ sessionId, initialSession }: SessionDetail
         if (favResponse.ok) {
           const favData = await favResponse.json()
           setIsFavorited(favData.length > 0)
+        }
+
+        // Fetch RSVP status for this session
+        const rsvpResponse = await fetch(
+          `${SUPABASE_URL}/rest/v1/session_rsvps?user_id=eq.${user.id}&session_id=eq.${sessionId}&select=status,waitlist_position`,
+          {
+            headers: {
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${token}`,
+            },
+          }
+        )
+
+        if (rsvpResponse.ok) {
+          const rsvpData = await rsvpResponse.json()
+          if (rsvpData.length > 0) {
+            setUserRsvpStatus(rsvpData[0].status)
+            setUserWaitlistPosition(rsvpData[0].waitlist_position)
+          }
         }
       } catch (err) {
         console.error('Error fetching user data:', err)
@@ -942,6 +964,20 @@ export function SessionDetailClient({ sessionId, initialSession }: SessionDetail
                     eventLocation={event.locationName}
                     variant="outline"
                     size="default"
+                  />
+                )}
+                {/* RSVP button for scheduled sessions */}
+                {session.status === 'scheduled' && (
+                  <RSVPButton
+                    sessionId={sessionId}
+                    rsvpCount={session.rsvp_count || 0}
+                    waitlistCount={session.waitlist_count || 0}
+                    capacity={session.venue?.capacity || null}
+                    initialStatus={userRsvpStatus}
+                    initialWaitlistPosition={userWaitlistPosition}
+                    variant="outline"
+                    showCapacity={true}
+                    onRSVPChange={(status) => setUserRsvpStatus(status)}
                   />
                 )}
                 {/* Add Telegram Group button for host, co-host, or admin (when no group URL set) */}
