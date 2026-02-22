@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, Mail, LayoutGrid, Plus, Table, Grid3X3 } from 'lucide-react'
+import { Loader2, Mail, LayoutGrid, Plus, Table, Grid3X3, Beaker, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
@@ -517,6 +517,8 @@ export default function AdminPage() {
   }
 
   const [isBulkNotifying, setIsBulkNotifying] = React.useState(false)
+  const [isSeeding, setIsSeeding] = React.useState(false)
+  const [isClearing, setIsClearing] = React.useState(false)
 
   const handleNotifyAllHosts = async () => {
     const token = getAccessToken()
@@ -557,6 +559,77 @@ export default function AdminPage() {
     setIsBulkNotifying(false)
     alert(`Sent ${sentCount} notification(s).`)
   }
+
+  // Test data operations
+  const handleSeedTestSessions = async () => {
+    const token = getAccessToken()
+    if (!token) return
+
+    if (!confirm('This will create ~28 test sessions prefixed with [TEST]. Continue?')) {
+      return
+    }
+
+    setIsSeeding(true)
+    try {
+      const response = await fetch(`/api/v1/events/${event.slug}/admin/seed-sessions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        alert(data.message)
+        // Refresh the page to show new sessions
+        window.location.reload()
+      } else {
+        const data = await response.json()
+        alert(data.error || 'Failed to create test sessions')
+      }
+    } catch (err) {
+      console.error('Error seeding test sessions:', err)
+      alert('An error occurred')
+    } finally {
+      setIsSeeding(false)
+    }
+  }
+
+  const handleClearTestSessions = async () => {
+    const token = getAccessToken()
+    if (!token) return
+
+    if (!confirm('This will delete all sessions prefixed with [TEST]. Continue?')) {
+      return
+    }
+
+    setIsClearing(true)
+    try {
+      const response = await fetch(`/api/v1/events/${event.slug}/admin/seed-sessions`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        alert(data.message)
+        // Remove test sessions from local state
+        setSessions((prev) => prev.filter((s) => !s.title.startsWith('[TEST]')))
+      } else {
+        const data = await response.json()
+        alert(data.error || 'Failed to delete test sessions')
+      }
+    } catch (err) {
+      console.error('Error clearing test sessions:', err)
+      alert('An error occurred')
+    } finally {
+      setIsClearing(false)
+    }
+  }
+
+  const testSessionCount = sessions.filter((s) => s.title.startsWith('[TEST]')).length
 
   const pendingSessions = sessions.filter((s) => s.status === 'pending')
   const approvedSessions = sessions.filter((s) => s.status === 'approved')
@@ -641,6 +714,71 @@ export default function AdminPage() {
                     Open Schedule Builder
                   </Link>
                 </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Test Data Tools */}
+          {process.env.NODE_ENV === 'development' && (
+            <Card className="bg-amber-500/5 border-amber-500/20">
+              <CardContent className="py-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <p className="font-medium flex items-center gap-2">
+                      <Beaker className="h-4 w-4 text-amber-600" />
+                      Test Data Tools
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Generate test sessions for auto-scheduler testing
+                      {testSessionCount > 0 && (
+                        <span className="ml-1 text-amber-600">
+                          ({testSessionCount} test sessions exist)
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSeedTestSessions}
+                      disabled={isSeeding || isClearing}
+                    >
+                      {isSeeding ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Beaker className="h-4 w-4 mr-1" />
+                          Generate Test Sessions
+                        </>
+                      )}
+                    </Button>
+                    {testSessionCount > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleClearTestSessions}
+                        disabled={isSeeding || isClearing}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        {isClearing ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                            Clearing...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Clear Test Data
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
