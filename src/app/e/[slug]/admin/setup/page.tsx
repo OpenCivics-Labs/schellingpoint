@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronUp,
   Calendar,
+  Zap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AdminNav } from '@/components/admin/AdminNav'
@@ -26,6 +27,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
 import { getEventDays, getEventDayLabel } from '@/lib/events/dates'
 import { cn } from '@/lib/utils'
+import { BulkSlotGenerator, type GeneratedSlot } from '@/components/admin/BulkSlotGenerator'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -96,6 +98,9 @@ export default function AdminSetupPage() {
 
   // Expanded venues for availability editing
   const [expandedVenues, setExpandedVenues] = React.useState<Set<string>>(new Set())
+
+  // Bulk slot generator
+  const [showBulkGenerator, setShowBulkGenerator] = React.useState(false)
 
   // Redirect if not admin
   React.useEffect(() => {
@@ -334,6 +339,22 @@ export default function AdminSetupPage() {
     })
   }
 
+  // Bulk generate time slots
+  const handleBulkGenerate = async (slots: GeneratedSlot[]) => {
+    for (const slot of slots) {
+      await handleAddTimeSlot(
+        slot.venueId,
+        slot.dayDate,
+        slot.startTime,
+        slot.endTime,
+        slot.label,
+        slot.isBreak ? 'break' : 'session',
+        slot.isBreak
+      )
+    }
+    setShowBulkGenerator(false)
+  }
+
   if (authLoading || roleLoading || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -373,12 +394,43 @@ export default function AdminSetupPage() {
               Venues & Availability
             </h2>
             {can('manageVenues') && (
-              <Button onClick={() => setShowVenueForm(true)} disabled={showVenueForm} className="w-full sm:w-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Venue
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => setShowVenueForm(true)} disabled={showVenueForm} className="flex-1 sm:flex-none">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Venue
+                </Button>
+                {venues.length > 0 && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowBulkGenerator(true)}
+                    disabled={showBulkGenerator}
+                    className="flex-1 sm:flex-none"
+                  >
+                    <Zap className="h-4 w-4 mr-2" />
+                    <span className="hidden sm:inline">Bulk Generate Slots</span>
+                    <span className="sm:hidden">Bulk Slots</span>
+                  </Button>
+                )}
+              </div>
             )}
           </div>
+
+          {/* Bulk Slot Generator */}
+          {showBulkGenerator && venues.length > 0 && (
+            <Card className="border-primary/50">
+              <CardHeader>
+                <CardTitle className="text-lg">Bulk Generate Time Slots</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <BulkSlotGenerator
+                  venues={venues.map(v => ({ id: v.id, name: v.name, capacity: v.capacity }))}
+                  eventDays={eventDays}
+                  onGenerate={handleBulkGenerate}
+                  onCancel={() => setShowBulkGenerator(false)}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Venue Form */}
           {showVenueForm && (
