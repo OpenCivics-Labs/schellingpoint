@@ -8,7 +8,7 @@
  * Scoring criteria:
  * - Time preference match: +10
  * - Duration match: +8
- * - Capacity fit: +5
+ * - Capacity fit: +5 (uses expected_attendance or falls back to total_votes)
  * - Track spread: +3 (avoid same track in same time)
  */
 
@@ -17,6 +17,7 @@ export interface Session {
   title: string
   duration: number
   total_votes: number
+  expected_attendance: number | null
   status: 'pending' | 'approved' | 'rejected' | 'scheduled'
   time_slot_id: string | null
   venue_id: string | null
@@ -146,15 +147,18 @@ function scoreSlot(
   }
 
   // 3. Capacity fit (+5)
+  // Use expected_attendance if provided, otherwise fall back to total_votes as a proxy
+  const estimatedAttendance = session.expected_attendance || session.total_votes || 0
+
   if (venue.capacity) {
-    const estimatedAttendance = session.total_votes // Could apply a multiplier
     if (estimatedAttendance <= venue.capacity * 0.7) {
       score += 5 // Comfortable fit
     } else if (estimatedAttendance <= venue.capacity) {
       score += 3 // Tight fit
+      warnings.push(`Venue may be tight: ~${estimatedAttendance} expected, ${venue.capacity} capacity`)
     } else {
-      score += 0 // Over capacity
-      warnings.push(`Capacity warning: ${session.total_votes} expected, ${venue.capacity} capacity`)
+      score += 0 // Over capacity - still allow but warn heavily
+      warnings.push(`OVER CAPACITY: ~${estimatedAttendance} expected, ${venue.capacity} capacity`)
     }
   } else {
     score += 2 // Unknown capacity, neutral score

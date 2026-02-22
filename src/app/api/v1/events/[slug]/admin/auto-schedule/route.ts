@@ -52,7 +52,7 @@ export async function GET(
   const [sessionsRes, timeSlotsRes, venuesRes] = await Promise.all([
     supabase
       .from('sessions')
-      .select('id, title, duration, total_votes, status, time_slot_id, venue_id, track_id, time_preferences')
+      .select('id, title, duration, total_votes, expected_attendance, status, time_slot_id, venue_id, track_id, time_preferences')
       .eq('event_id', event.id),
     supabase
       .from('time_slots')
