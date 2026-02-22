@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Loader2, CheckCircle, MapPin, Building2, Clock } from 'lucide-react'
+import { Loader2, CheckCircle, MapPin, Building2, Clock, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -31,6 +31,14 @@ const durations = [
   { value: 30, label: '30 min' },
   { value: 60, label: '60 min' },
   { value: 90, label: '90 min' },
+]
+
+const expectedAttendanceOptions = [
+  { value: 10, label: 'Small (1-10)', description: 'Intimate discussion' },
+  { value: 25, label: 'Medium (10-25)', description: 'Standard session' },
+  { value: 50, label: 'Large (25-50)', description: 'Popular topic' },
+  { value: 100, label: 'Very Large (50-100)', description: 'High interest' },
+  { value: 150, label: 'Auditorium (100+)', description: 'Keynote level' },
 ]
 
 const TIME_PREFERENCES = [
@@ -115,6 +123,7 @@ export default function ProposePage() {
   const [description, setDescription] = React.useState('')
   const [format, setFormat] = React.useState('talk')
   const [duration, setDuration] = React.useState(60)
+  const [expectedAttendance, setExpectedAttendance] = React.useState<number | null>(null)
   const [tags, setTags] = React.useState<string[]>([])
   const [customTag, setCustomTag] = React.useState('')
   const [timePreferences, setTimePreferences] = React.useState<string[]>([])
@@ -227,6 +236,7 @@ export default function ProposePage() {
           description: description.trim() || null,
           format,
           duration,
+          expected_attendance: expectedAttendance,
           host_name: profile.display_name || profile.email,
           topic_tags: tags.length > 0 ? tags : null,
           time_preferences: timePreferences.length > 0 ? timePreferences : null,
@@ -299,6 +309,7 @@ export default function ProposePage() {
                     setDescription('')
                     setFormat('talk')
                     setDuration(60)
+                    setExpectedAttendance(null)
                     setTags([])
                     setTimePreferences([])
                     setIsSelfHosted(false)
@@ -408,6 +419,35 @@ export default function ProposePage() {
                       )}
                     >
                       {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Expected Attendance */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Expected Attendance
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Helps organizers assign an appropriate venue
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {expectedAttendanceOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setExpectedAttendance(expectedAttendance === opt.value ? null : opt.value)}
+                      className={cn(
+                        'p-3 rounded-lg border text-left transition-colors',
+                        expectedAttendance === opt.value
+                          ? 'border-primary bg-primary/10'
+                          : 'hover:border-muted-foreground/50'
+                      )}
+                    >
+                      <div className="font-medium text-sm">{opt.label}</div>
+                      <div className="text-xs text-muted-foreground">{opt.description}</div>
                     </button>
                   ))}
                 </div>

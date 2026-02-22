@@ -9,7 +9,7 @@ import {
   parseIncludes,
 } from '@/lib/api/response'
 
-const SESSION_FIELDS = 'id,title,description,format,duration,host_name,topic_tags,status,is_self_hosted,custom_location,self_hosted_start_time,self_hosted_end_time,session_type,is_votable,total_votes,total_credits,voter_count,host_id,venue_id,time_slot_id,track_id,telegram_group_url,created_at,updated_at'
+const SESSION_FIELDS = 'id,title,description,format,duration,host_name,topic_tags,status,is_self_hosted,custom_location,self_hosted_start_time,self_hosted_end_time,session_type,is_votable,total_votes,total_credits,voter_count,host_id,venue_id,time_slot_id,track_id,telegram_group_url,expected_attendance,created_at,updated_at'
 
 const VALID_INCLUDES = ['host', 'track', 'venue', 'timeslot', 'cohosts']
 const VALID_STATUSES = ['pending', 'approved', 'rejected', 'scheduled']
@@ -75,7 +75,7 @@ const ALLOWED_FIELDS = [
   'title', 'description', 'format', 'duration', 'host_name',
   'topic_tags', 'time_preferences', 'status', 'is_self_hosted',
   'custom_location', 'self_hosted_start_time', 'self_hosted_end_time',
-  'track_id', 'telegram_group_url', 'event_id',
+  'track_id', 'telegram_group_url', 'event_id', 'expected_attendance',
 ]
 
 export async function POST(request: Request) {
