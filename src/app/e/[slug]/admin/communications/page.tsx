@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AdminNav } from '@/components/admin/AdminNav'
 import { useAuth } from '@/hooks/useAuth'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
+import { getAccessToken } from '@/lib/supabase/client'
 import { formatDistanceToNow } from 'date-fns'
 
 interface Broadcast {
@@ -44,8 +45,17 @@ export default function AdminCommunicationsPage() {
   React.useEffect(() => {
     async function fetchHistory() {
       try {
+        const token = getAccessToken()
+        if (!token) {
+          console.warn('No auth token for broadcast history')
+          setLoadingHistory(false)
+          return
+        }
+
         const response = await fetch(`/api/v1/events/${event.slug}/admin/broadcast`, {
-          credentials: 'include',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
         })
         if (response.ok) {
           const data = await response.json()
@@ -67,10 +77,19 @@ export default function AdminCommunicationsPage() {
     setError(null)
 
     try {
+      const token = getAccessToken()
+      if (!token) {
+        setError('Please log in to send announcements')
+        setIsLoading(false)
+        return
+      }
+
       const response = await fetch(`/api/v1/events/${event.slug}/admin/broadcast`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           title: title.trim(),
           message: message.trim(),
@@ -94,7 +113,9 @@ export default function AdminCommunicationsPage() {
 
       // Refresh history
       const historyResponse = await fetch(`/api/v1/events/${event.slug}/admin/broadcast`, {
-        credentials: 'include',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
       })
       if (historyResponse.ok) {
         const historyData = await historyResponse.json()
