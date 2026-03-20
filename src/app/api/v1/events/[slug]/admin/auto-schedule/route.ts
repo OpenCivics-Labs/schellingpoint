@@ -48,7 +48,8 @@ export async function GET(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  // Fetch data
+  // Fetch data including votes for cluster analysis
+  // Note: required_features and features columns may not exist yet if migrations haven't been applied
   const [sessionsRes, timeSlotsRes, venuesRes] = await Promise.all([
     supabase
       .from('sessions')
@@ -65,17 +66,63 @@ export async function GET(
   ])
 
   if (sessionsRes.error || timeSlotsRes.error || venuesRes.error) {
-    return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 })
+    console.error('Auto-schedule fetch errors:', {
+      sessions: sessionsRes.error,
+      timeSlots: timeSlotsRes.error,
+      venues: venuesRes.error,
+    })
+    return NextResponse.json(
+      {
+        error: 'Failed to fetch data',
+        details: {
+          sessions: sessionsRes.error?.message,
+          timeSlots: timeSlotsRes.error?.message,
+          venues: venuesRes.error?.message,
+        },
+      },
+      { status: 500 }
+    )
   }
 
-  // Run auto-scheduler
-  const result = autoSchedule(
-    sessionsRes.data || [],
-    timeSlotsRes.data || [],
-    venuesRes.data || []
-  )
+  // Fetch votes for this event's sessions (votes table doesn't have event_id directly)
+  const sessionIds = (sessionsRes.data || []).map((s) => s.id)
+  let votes: { session_id: string; user_id: string; vote_count: number }[] = []
 
-  return NextResponse.json(result)
+  if (sessionIds.length > 0) {
+    const { data: votesData, error: votesError } = await supabase
+      .from('votes')
+      .select('session_id, user_id, vote_count')
+      .in('session_id', sessionIds)
+
+    if (!votesError && votesData) {
+      votes = votesData
+    }
+  }
+
+  // Run auto-scheduler with voting data for cluster analysis
+  // Add default null values for optional columns that may not exist in DB yet
+  const sessions = (sessionsRes.data || []).map((s) => ({
+    ...s,
+    required_features: null as string[] | null,
+  }))
+  const venues = (venuesRes.data || []).map((v) => ({
+    ...v,
+    features: null as string[] | null,
+  }))
+
+  try {
+    const result = autoSchedule(sessions, timeSlotsRes.data || [], venues, votes)
+    return NextResponse.json(result)
+  } catch (error) {
+    console.error('Auto-schedule algorithm error:', error)
+    return NextResponse.json(
+      {
+        error: 'Auto-schedule algorithm failed',
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    )
+  }
 }
 
 // Apply auto-schedule

@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button'
 import { AdminNav } from '@/components/admin/AdminNav'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useAuth } from '@/hooks/useAuth'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
 import { getEventDays, getEventDayLabel } from '@/lib/events/dates'
@@ -195,6 +196,7 @@ export default function AdminSchedulePage() {
     unassigned: Array<{ sessionId: string; sessionTitle: string; reason: string }>
     stats: { totalSessions: number; assigned: number; unassigned: number; averageScore: number }
   } | null>(null)
+  const [selectedAssignments, setSelectedAssignments] = React.useState<Set<string>>(new Set())
 
   // Publish workflow state
   const [showPublishModal, setShowPublishModal] = React.useState(false)
@@ -681,6 +683,8 @@ export default function AdminSchedulePage() {
 
       const result = await response.json()
       setAutoScheduleResult(result)
+      // Select all assignments by default
+      setSelectedAssignments(new Set(result.assignments.map((a: { sessionId: string }) => a.sessionId)))
     } catch (err) {
       console.error('Auto-schedule error:', err)
       alert('Failed to generate auto-schedule')
@@ -690,12 +694,25 @@ export default function AdminSchedulePage() {
     }
   }
 
-  // Auto-schedule: apply
+  // Auto-schedule: apply only selected assignments
   const handleAutoScheduleApply = async () => {
     if (!autoScheduleResult) return
 
     const token = getAccessToken()
     if (!token) return
+
+    // Filter to only selected assignments
+    const assignmentsToApply = autoScheduleResult.assignments.filter(
+      (a) => selectedAssignments.has(a.sessionId)
+    )
+
+    if (assignmentsToApply.length === 0) {
+      alert('No assignments selected')
+      return
+    }
+
+    console.log('[Auto-schedule] Applying assignments:', assignmentsToApply.length)
+    console.log('[Auto-schedule] Sessions before apply:', sessions.length)
 
     setAutoScheduleLoading(true)
 
@@ -707,37 +724,42 @@ export default function AdminSchedulePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          assignments: autoScheduleResult.assignments,
+          assignments: assignmentsToApply,
         }),
       })
 
       if (!response.ok) {
         const data = await response.json()
+        console.error('[Auto-schedule] Apply failed:', data)
         alert(data.error || 'Failed to apply auto-schedule')
         return
       }
 
       const data = await response.json()
+      console.log('[Auto-schedule] Server response:', data)
 
-      // Update local state with new assignments
+      // Update local state with only the applied assignments
       const assignmentMap = new Map(
-        autoScheduleResult.assignments.map((a) => [a.sessionId, { slotId: a.slotId, venueId: a.venueId }])
+        assignmentsToApply.map((a) => [a.sessionId, { slotId: a.slotId, venueId: a.venueId }])
       )
 
-      setSessions((prev) =>
-        prev.map((s) => {
+      setSessions((prev) => {
+        const updated = prev.map((s) => {
           const assignment = assignmentMap.get(s.id)
           if (assignment) {
             return {
               ...s,
-              status: 'scheduled',
+              status: 'scheduled' as const,
               venue_id: assignment.venueId,
               time_slot_id: assignment.slotId,
             }
           }
           return s
         })
-      )
+        console.log('[Auto-schedule] Sessions after apply:', updated.length)
+        console.log('[Auto-schedule] Unscheduled after apply:', updated.filter(s => (s.status === 'approved' || s.status === 'scheduled') && !s.time_slot_id).length)
+        return updated
+      })
 
       // Clear history after auto-schedule
       setHistory([])
@@ -745,13 +767,36 @@ export default function AdminSchedulePage() {
 
       setShowAutoSchedule(false)
       setAutoScheduleResult(null)
+      setSelectedAssignments(new Set())
 
-      alert(`Applied ${data.applied} assignments successfully!`)
+      alert(`Applied ${data.applied} of ${assignmentsToApply.length} assignments successfully!`)
     } catch (err) {
       console.error('Apply auto-schedule error:', err)
       alert('Failed to apply auto-schedule')
     } finally {
       setAutoScheduleLoading(false)
+    }
+  }
+
+  // Toggle assignment selection
+  const toggleAssignmentSelection = (sessionId: string) => {
+    setSelectedAssignments((prev) => {
+      const next = new Set(prev)
+      if (next.has(sessionId)) {
+        next.delete(sessionId)
+      } else {
+        next.add(sessionId)
+      }
+      return next
+    })
+  }
+
+  // Select/deselect all assignments
+  const toggleAllAssignments = (selectAll: boolean) => {
+    if (selectAll && autoScheduleResult) {
+      setSelectedAssignments(new Set(autoScheduleResult.assignments.map((a) => a.sessionId)))
+    } else {
+      setSelectedAssignments(new Set())
     }
   }
 
@@ -1190,39 +1235,77 @@ export default function AdminSchedulePage() {
                   {/* Assignments */}
                   {autoScheduleResult.assignments.length > 0 && (
                     <div>
-                      <h4 className="font-medium mb-2">Proposed Assignments ({autoScheduleResult.assignments.length})</h4>
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium">
+                          Proposed Assignments ({selectedAssignments.size}/{autoScheduleResult.assignments.length} selected)
+                        </h4>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleAllAssignments(true)}
+                            disabled={selectedAssignments.size === autoScheduleResult.assignments.length}
+                          >
+                            Select All
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleAllAssignments(false)}
+                            disabled={selectedAssignments.size === 0}
+                          >
+                            Deselect All
+                          </Button>
+                        </div>
+                      </div>
                       <div className="space-y-2 max-h-60 overflow-y-auto">
                         {autoScheduleResult.assignments.map((a) => {
                           const slot = timeSlots.find((s) => s.id === a.slotId)
                           const venue = venues.find((v) => v.id === a.venueId)
+                          const isSelected = selectedAssignments.has(a.sessionId)
                           return (
                             <div
                               key={a.sessionId}
                               className={cn(
-                                'p-3 rounded-lg border text-sm',
-                                a.warnings.length > 0 ? 'bg-amber-500/5 border-amber-500/30' : 'bg-green-500/5 border-green-500/30'
+                                'p-3 rounded-lg border text-sm cursor-pointer transition-colors',
+                                isSelected
+                                  ? a.warnings.length > 0
+                                    ? 'bg-amber-500/10 border-amber-500/50'
+                                    : 'bg-green-500/10 border-green-500/50'
+                                  : 'bg-muted/50 border-muted-foreground/20 opacity-60'
                               )}
+                              onClick={() => toggleAssignmentSelection(a.sessionId)}
                             >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                  <p className="font-medium truncate">{a.sessionTitle}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {venue?.name} · {slot ? formatTime(slot.start_time) : 'Unknown'}
-                                  </p>
+                              <div className="flex items-start gap-3">
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={() => toggleAssignmentSelection(a.sessionId)}
+                                  className="mt-0.5"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0">
+                                      <p className="font-medium truncate">{a.sessionTitle}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {venue?.name} · {slot ? formatTime(slot.start_time) : 'Unknown'}
+                                        {slot?.day_date && ` · ${new Date(slot.day_date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`}
+                                      </p>
+                                    </div>
+                                    <Badge variant="outline" className="text-xs shrink-0">
+                                      Score: {a.score}
+                                    </Badge>
+                                  </div>
+                                  {a.warnings.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-1">
+                                      {a.warnings.map((w, i) => (
+                                        <span key={i} className="text-[10px] text-amber-600 dark:text-amber-400">
+                                          ⚠️ {w}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
-                                <Badge variant="outline" className="text-xs shrink-0">
-                                  Score: {a.score}
-                                </Badge>
                               </div>
-                              {a.warnings.length > 0 && (
-                                <div className="mt-2 flex flex-wrap gap-1">
-                                  {a.warnings.map((w, i) => (
-                                    <span key={i} className="text-[10px] text-amber-600 dark:text-amber-400">
-                                      ⚠️ {w}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
                             </div>
                           )
                         })}
@@ -1262,6 +1345,7 @@ export default function AdminSchedulePage() {
                   onClick={() => {
                     setShowAutoSchedule(false)
                     setAutoScheduleResult(null)
+                    setSelectedAssignments(new Set())
                   }}
                   disabled={autoScheduleLoading}
                 >
@@ -1270,7 +1354,7 @@ export default function AdminSchedulePage() {
                 <Button
                   className="flex-1"
                   onClick={handleAutoScheduleApply}
-                  disabled={autoScheduleLoading}
+                  disabled={autoScheduleLoading || selectedAssignments.size === 0}
                 >
                   {autoScheduleLoading ? (
                     <>
@@ -1278,7 +1362,7 @@ export default function AdminSchedulePage() {
                       Applying...
                     </>
                   ) : (
-                    <>Apply {autoScheduleResult.assignments.length} Assignments</>
+                    <>Apply {selectedAssignments.size} of {autoScheduleResult.assignments.length} Assignments</>
                   )}
                 </Button>
               </div>
