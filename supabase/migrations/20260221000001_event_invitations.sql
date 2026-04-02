@@ -1,11 +1,14 @@
 -- Event Invitations for Private Events
 -- Allows event owners/admins to invite people via email or shareable links
 
+-- Ensure pgcrypto is available for gen_random_bytes()
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
+
 CREATE TABLE IF NOT EXISTS event_invitations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
   email TEXT, -- NULL for reusable/shareable links
-  token TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
+  token TEXT NOT NULL UNIQUE DEFAULT encode(extensions.gen_random_bytes(32), 'hex'),
   role TEXT NOT NULL DEFAULT 'attendee' CHECK (role IN ('attendee', 'volunteer', 'moderator', 'admin')),
   expires_at TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '7 days',
   accepted_at TIMESTAMPTZ,
