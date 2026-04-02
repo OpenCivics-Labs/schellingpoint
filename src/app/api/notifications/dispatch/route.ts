@@ -26,7 +26,11 @@ import {
 } from '@/lib/email/notification-emails'
 
 const BATCH_SIZE = 50 // Process up to 50 notifications per request
-const resend = new Resend(process.env.RESEND_API_KEY)
+let _resend: Resend | null = null
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY)
+  return _resend
+}
 
 // Verify cron/webhook secret
 function verifyAuth(request: NextRequest): boolean {
@@ -150,7 +154,7 @@ export async function POST(request: NextRequest) {
         const fromEmail = process.env.RESEND_FROM_EMAIL || 'hello@schellingpoint.city'
         const fromName = event?.name || 'Schelling Point'
 
-        const { error: sendError } = await resend.emails.send({
+        const { error: sendError } = await getResend().emails.send({
           from: `${fromName} <${fromEmail}>`,
           to: profile.email,
           subject: email.subject,
