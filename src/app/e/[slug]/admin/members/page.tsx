@@ -88,9 +88,10 @@ export default function AdminMembersPage() {
       if (!token) return
 
       try {
-        // Fetch members
+        // Fetch members. Join to profiles via PostgREST FK resolution so we
+        // get display_name/email alongside each event_member row.
         const membersRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/event_members?event_id=eq.${event.id}&select=id,user_id,role,joined_at,user_data:user_data(display_name,email)&order=role.asc,joined_at.asc`,
+          `${SUPABASE_URL}/rest/v1/event_members?event_id=eq.${event.id}&select=id,user_id,role,joined_at,user_data:profiles!user_id(display_name,email)&order=role.asc,joined_at.asc`,
           {
             headers: {
               'apikey': SUPABASE_KEY,
