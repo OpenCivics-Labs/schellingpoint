@@ -61,8 +61,8 @@ function validateWizardState(state: WizardState): { valid: boolean; error?: stri
   if (state.voting.credits <= 0) {
     return { valid: false, error: 'Vote credits must be greater than 0' };
   }
-  if (state.voting.maxProposalsPerUser <= 0) {
-    return { valid: false, error: 'Max proposals per user must be greater than 0' };
+  if (state.voting.maxProposalsPerUser < 0) {
+    return { valid: false, error: 'Max proposals per user cannot be negative' };
   }
   if (!state.voting.allowedFormats?.length) {
     return { valid: false, error: 'At least one session format must be allowed' };
@@ -140,7 +140,12 @@ function transformToEventInsert(
     last_schedule_change_at: null,
     ticketing_enabled: false,
     stripe_account_id: null,
-    suggested_topics: null, // Will use defaults
+    // Persist organizer-defined topics. If empty, fall back to null so the
+    // column default (or frontend fallback) applies.
+    suggested_topics:
+      Array.isArray(state.suggestedTopics) && state.suggestedTopics.length > 0
+        ? state.suggestedTopics
+        : null,
   };
 }
 

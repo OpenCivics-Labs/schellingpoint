@@ -1,9 +1,11 @@
 'use client';
 
 import * as React from 'react';
+import { Plus, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { WizardState, WizardAction, VotingMechanism } from '../useWizardState';
 
@@ -70,9 +72,65 @@ const SESSION_DURATIONS: { value: number; label: string }[] = [
 export function VotingStep({ state, dispatch }: VotingStepProps) {
   const { voting } = state;
 
+  // Local state for custom format/duration inputs
+  const [customFormatInput, setCustomFormatInput] = React.useState('');
+  const [customDurationInput, setCustomDurationInput] = React.useState('');
+
   // Handler for updating voting fields
   const handleVotingChange = (updates: Partial<typeof voting>) => {
     dispatch({ type: 'UPDATE_VOTING', payload: updates });
+  };
+
+  // Normalize a custom format label to a slug-like value
+  const normalizeFormatValue = (raw: string) =>
+    raw
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+
+  // Add a custom format
+  const handleAddCustomFormat = () => {
+    const value = normalizeFormatValue(customFormatInput);
+    if (!value) return;
+    if (!voting.allowedFormats.includes(value)) {
+      handleVotingChange({ allowedFormats: [...voting.allowedFormats, value] });
+    }
+    setCustomFormatInput('');
+  };
+
+  // Add a custom duration
+  const handleAddCustomDuration = () => {
+    const value = parseInt(customDurationInput, 10);
+    if (isNaN(value) || value <= 0) return;
+    if (!voting.allowedDurations.includes(value)) {
+      const next = [...voting.allowedDurations, value].sort((a, b) => a - b);
+      handleVotingChange({ allowedDurations: next });
+    }
+    setCustomDurationInput('');
+  };
+
+  // Remove a format/duration (used for custom items not in presets)
+  const handleRemoveFormat = (value: string) => {
+    handleVotingChange({
+      allowedFormats: voting.allowedFormats.filter((f) => f !== value),
+    });
+  };
+
+  const handleRemoveDuration = (value: number) => {
+    handleVotingChange({
+      allowedDurations: voting.allowedDurations.filter((d) => d !== value),
+    });
+  };
+
+  // Format a custom format value for display (convert 'fireside-chat' -> 'Fireside chat')
+  const displayFormatLabel = (value: string) => {
+    const preset = SESSION_FORMATS.find((f) => f.value === value);
+    if (preset) return preset.label;
+    return value
+      .split('-')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
   };
 
   // Handler for number inputs
@@ -270,22 +328,63 @@ export function VotingStep({ state, dispatch }: VotingStepProps) {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Max Proposals Per User */}
-          <div className="space-y-2">
-            <Label htmlFor="maxProposals">Max Proposals Per User</Label>
-            <Input
-              id="maxProposals"
-              type="number"
-              min={1}
-              value={voting.maxProposalsPerUser}
-              onChange={handleNumberChange('maxProposalsPerUser')}
-              className="max-w-[200px]"
-              error={state.validation.voting?.includes(
-                'Max proposals per user must be greater than 0'
-              )}
-            />
-            <p className="text-sm text-muted-foreground">
-              How many sessions can each person propose?
-            </p>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={voting.maxProposalsPerUser === 0}
+                onClick={() =>
+                  handleVotingChange({
+                    maxProposalsPerUser: voting.maxProposalsPerUser === 0 ? 3 : 0,
+                  })
+                }
+                className={cn(
+                  'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out',
+                  'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+                  voting.maxProposalsPerUser === 0 ? 'bg-primary' : 'bg-muted'
+                )}
+              >
+                <span
+                  className={cn(
+                    'pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow ring-0 transition duration-200 ease-in-out',
+                    voting.maxProposalsPerUser === 0 ? 'translate-x-5' : 'translate-x-0'
+                  )}
+                />
+              </button>
+              <div className="space-y-1">
+                <Label className="cursor-pointer" onClick={() =>
+                  handleVotingChange({
+                    maxProposalsPerUser: voting.maxProposalsPerUser === 0 ? 3 : 0,
+                  })
+                }>
+                  No per-user proposal limit
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  When enabled, attendees can submit unlimited session proposals.
+                </p>
+              </div>
+            </div>
+
+            {voting.maxProposalsPerUser !== 0 && (
+              <div className="space-y-2 pl-14">
+                <Label htmlFor="maxProposals">Max Proposals Per User</Label>
+                <Input
+                  id="maxProposals"
+                  type="number"
+                  min={1}
+                  value={voting.maxProposalsPerUser}
+                  onChange={handleNumberChange('maxProposalsPerUser')}
+                  className="max-w-[200px]"
+                  error={state.validation.voting?.includes(
+                    'Max proposals per user must be greater than 0'
+                  )}
+                />
+                <p className="text-sm text-muted-foreground">
+                  How many sessions can each person propose?
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Require Proposal Approval */}
@@ -328,7 +427,7 @@ export function VotingStep({ state, dispatch }: VotingStepProps) {
             What types of sessions can attendees propose?
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {SESSION_FORMATS.map((format) => {
               const isSelected = voting.allowedFormats.includes(format.value);
@@ -373,6 +472,64 @@ export function VotingStep({ state, dispatch }: VotingStepProps) {
               );
             })}
           </div>
+
+          {/* Custom Formats (added by organizer) */}
+          {voting.allowedFormats.filter(
+            (v) => !SESSION_FORMATS.some((f) => f.value === v)
+          ).length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Custom formats
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {voting.allowedFormats
+                  .filter((v) => !SESSION_FORMATS.some((f) => f.value === v))
+                  .map((value) => (
+                    <span
+                      key={value}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border-2 border-primary bg-primary/5"
+                    >
+                      {displayFormatLabel(value)}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveFormat(value)}
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                        aria-label={`Remove ${value}`}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </span>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Add custom format input */}
+          <div className="flex gap-2 items-center pt-2 border-t">
+            <Input
+              placeholder="Add a custom format (e.g., Fireside chat)"
+              value={customFormatInput}
+              onChange={(e) => setCustomFormatInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddCustomFormat();
+                }
+              }}
+              maxLength={50}
+              className="max-w-xs"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleAddCustomFormat}
+              disabled={!customFormatInput.trim()}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+          </div>
+
           {state.validation.voting?.includes(
             'At least one session format must be allowed'
           ) && (
@@ -391,7 +548,7 @@ export function VotingStep({ state, dispatch }: VotingStepProps) {
             What session lengths are available for proposals?
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
             {SESSION_DURATIONS.map((duration) => {
               const isSelected = voting.allowedDurations.includes(duration.value);
@@ -436,6 +593,66 @@ export function VotingStep({ state, dispatch }: VotingStepProps) {
               );
             })}
           </div>
+
+          {/* Custom Durations (organizer-added) */}
+          {voting.allowedDurations.filter(
+            (v) => !SESSION_DURATIONS.some((d) => d.value === v)
+          ).length > 0 && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Custom durations
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {voting.allowedDurations
+                  .filter((v) => !SESSION_DURATIONS.some((d) => d.value === v))
+                  .map((value) => (
+                    <span
+                      key={value}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border-2 border-primary bg-primary/5"
+                    >
+                      {value} min
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveDuration(value)}
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                        aria-label={`Remove ${value} min`}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </span>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Add custom duration input */}
+          <div className="flex gap-2 items-center pt-2 border-t">
+            <Input
+              type="number"
+              min={1}
+              max={600}
+              placeholder="Duration in minutes"
+              value={customDurationInput}
+              onChange={(e) => setCustomDurationInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddCustomDuration();
+                }
+              }}
+              className="max-w-[200px]"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleAddCustomDuration}
+              disabled={!customDurationInput.trim()}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+          </div>
+
           {state.validation.voting?.includes(
             'At least one session duration must be allowed'
           ) && (

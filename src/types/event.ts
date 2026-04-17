@@ -172,9 +172,8 @@ export function transformEventRow(row: EventRow): Event {
     lastScheduleChangeAt: row.last_schedule_change_at ? new Date(row.last_schedule_change_at) : null,
     ticketingEnabled: row.ticketing_enabled,
     stripeAccountId: row.stripe_account_id,
-    suggestedTopics: row.suggested_topics || [
-      'Governance', 'DeFi', 'DAOs', 'NFTs', 'Privacy',
-      'Security', 'Public Goods', 'Developer Tools', 'Community', 'Education'
-    ],
+    // No hardcoded fallback — topics are organizer-defined.
+    // Events created before organizer topics existed may have legacy defaults in the DB.
+    suggestedTopics: row.suggested_topics || [],
   };
 }

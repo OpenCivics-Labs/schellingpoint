@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Plus, Pencil, Trash2, X, Check } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Check, Tag } from 'lucide-react';
 import type { WizardState, WizardAction, WizardTrack } from '../useWizardState';
 
 // ============================================================================
@@ -326,11 +326,39 @@ function TrackForm({ initialData, onSubmit, onCancel, submitLabel }: TrackFormPr
 // ============================================================================
 
 export function TracksStep({ state, dispatch }: TracksStepProps) {
-  const { tracks } = state;
+  const { tracks, suggestedTopics } = state;
 
   // Form state
   const [isAddingTrack, setIsAddingTrack] = React.useState(false);
   const [editingTrackId, setEditingTrackId] = React.useState<string | null>(null);
+
+  // Topic input state
+  const [topicInput, setTopicInput] = React.useState('');
+
+  const handleAddTopic = (raw: string) => {
+    const topic = raw.trim();
+    if (!topic) return;
+    // Case-insensitive de-dup
+    const exists = suggestedTopics.some(
+      (t) => t.toLowerCase() === topic.toLowerCase()
+    );
+    if (exists) {
+      setTopicInput('');
+      return;
+    }
+    dispatch({
+      type: 'SET_SUGGESTED_TOPICS',
+      payload: [...suggestedTopics, topic],
+    });
+    setTopicInput('');
+  };
+
+  const handleRemoveTopic = (topic: string) => {
+    dispatch({
+      type: 'SET_SUGGESTED_TOPICS',
+      payload: suggestedTopics.filter((t) => t !== topic),
+    });
+  };
 
   // Handlers
   const handleAddTrack = (data: TrackFormData) => {
@@ -470,6 +498,80 @@ export function TracksStep({ state, dispatch }: TracksStepProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Suggested Profile Topics */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Tag className="h-5 w-5" />
+            Attendee Profile Topics
+          </CardTitle>
+          <CardDescription>
+            Define the interest topics attendees can tag on their profiles and
+            session proposals. These are specific to your event — use whatever
+            fits your community (e.g., &ldquo;Regenerative design&rdquo;,
+            &ldquo;Civic tech&rdquo;, &ldquo;AI safety&rdquo;).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Add topic */}
+          <div className="flex gap-2">
+            <Input
+              placeholder="Add a topic (e.g., Governance, Climate, DeFi)"
+              value={topicInput}
+              onChange={(e) => setTopicInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddTopic(topicInput);
+                }
+              }}
+              maxLength={60}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleAddTopic(topicInput)}
+              disabled={!topicInput.trim()}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+          </div>
+
+          {/* Topic list */}
+          {suggestedTopics.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {suggestedTopics.map((topic) => (
+                <span
+                  key={topic}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm bg-muted border"
+                >
+                  {topic}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveTopic(topic)}
+                    className="text-muted-foreground hover:text-destructive transition-colors"
+                    aria-label={`Remove topic ${topic}`}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+              No topics yet. Attendees will be asked to add their own interests
+              if left empty. Add a few to seed useful suggestions.
+            </div>
+          )}
+
+          <p className="text-xs text-muted-foreground">
+            Attendees will see these as selectable chips on their profile and
+            when tagging session proposals.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
