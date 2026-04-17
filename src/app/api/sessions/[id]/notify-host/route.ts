@@ -18,16 +18,6 @@ export async function POST(
 
   const admin = await createAdminClient()
 
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('is_admin')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.is_admin) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
   // 2. Fetch session with host profile, venue, time_slot, track, and event
   const { data: session, error: sessionError } = await admin
     .from('sessions')
@@ -44,6 +34,21 @@ export async function POST(
 
   if (sessionError || !session) {
     return NextResponse.json({ error: 'Session not found' }, { status: 404 })
+  }
+
+  // 2b. Authorize: user must be owner/admin/moderator of this session's event.
+  // This replaces the old global profiles.is_admin check which broke in
+  // multi-tenant mode for event admins who aren't global admins.
+  const { data: membership } = await admin
+    .from('event_members')
+    .select('role')
+    .eq('event_id', session.event_id)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  const allowedRoles = ['owner', 'admin', 'moderator']
+  if (!membership || !allowedRoles.includes(membership.role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   // 3. Idempotency: if already notified, return early
