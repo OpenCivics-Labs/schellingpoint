@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import {
   FileText,
   LayoutGrid,
@@ -23,124 +22,138 @@ interface AdminNavProps {
   canManageVenues: boolean
 }
 
+interface NavItem {
+  label: string
+  href: string
+  icon: React.ReactNode
+  active: boolean
+  show: boolean
+}
+
 export function AdminNav({ eventSlug, canManageSchedule, canManageVenues }: AdminNavProps) {
   const pathname = usePathname()
 
   const baseUrl = `/e/${eventSlug}/admin`
-  const isMainAdmin = pathname === baseUrl
-  const isScheduleBuilder = pathname === `${baseUrl}/schedule`
-  const isSetup = pathname === `${baseUrl}/setup`
-  const isCommunications = pathname === `${baseUrl}/communications`
-  const isAnalytics = pathname === `${baseUrl}/analytics`
-  const isTracks = pathname === `${baseUrl}/tracks`
-  const isTickets = pathname === `${baseUrl}/tickets`
-  const isRevenue = pathname === `${baseUrl}/revenue`
-  const isMembers = pathname === `${baseUrl}/members`
+  const isActive = (path: string) =>
+    path === baseUrl ? pathname === baseUrl : pathname?.startsWith(path)
 
-  const navItems = [
+  const navItems: NavItem[] = [
     {
       label: 'Sessions',
       href: baseUrl,
       icon: <FileText className="h-4 w-4" />,
-      active: isMainAdmin,
+      active: pathname === baseUrl,
       show: true,
     },
     {
-      label: 'Schedule Builder',
+      label: 'Schedule',
       href: `${baseUrl}/schedule`,
       icon: <LayoutGrid className="h-4 w-4" />,
-      active: isScheduleBuilder,
+      active: !!isActive(`${baseUrl}/schedule`),
       show: canManageSchedule,
     },
     {
-      label: 'Event Setup',
+      label: 'Setup',
       href: `${baseUrl}/setup`,
       icon: <Settings className="h-4 w-4" />,
-      active: isSetup,
+      active: !!isActive(`${baseUrl}/setup`),
       show: canManageVenues,
     },
     {
       label: 'Tracks',
       href: `${baseUrl}/tracks`,
       icon: <Tags className="h-4 w-4" />,
-      active: isTracks,
-      show: true, // All admins can manage tracks
+      active: !!isActive(`${baseUrl}/tracks`),
+      show: true,
     },
     {
       label: 'Tickets',
       href: `${baseUrl}/tickets`,
       icon: <Ticket className="h-4 w-4" />,
-      active: isTickets,
-      show: true, // All admins can manage tickets
+      active: !!isActive(`${baseUrl}/tickets`),
+      show: true,
     },
     {
       label: 'Revenue',
       href: `${baseUrl}/revenue`,
       icon: <DollarSign className="h-4 w-4" />,
-      active: isRevenue,
-      show: true, // Owners/admins can view revenue
+      active: !!isActive(`${baseUrl}/revenue`),
+      show: true,
     },
     {
       label: 'Members',
       href: `${baseUrl}/members`,
       icon: <Users className="h-4 w-4" />,
-      active: isMembers,
-      show: true, // Owners/admins can manage members
+      active: !!isActive(`${baseUrl}/members`),
+      show: true,
     },
     {
       label: 'Communications',
       href: `${baseUrl}/communications`,
       icon: <Megaphone className="h-4 w-4" />,
-      active: isCommunications,
-      show: true, // All admins can send communications
+      active: !!isActive(`${baseUrl}/communications`),
+      show: true,
     },
     {
       label: 'Analytics',
       href: `${baseUrl}/analytics`,
       icon: <BarChart3 className="h-4 w-4" />,
-      active: isAnalytics,
-      show: true, // All admins can view analytics
+      active: !!isActive(`${baseUrl}/analytics`),
+      show: true,
     },
-  ].filter(item => item.show)
+  ].filter((item) => item.show)
 
   return (
-    <header className="border-b sticky top-0 bg-background z-10">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between gap-4">
-          {/* Back link and title */}
-          <div className="flex items-center gap-3">
-            <Link
-              href={`/e/${eventSlug}/sessions`}
-              className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              <span className="hidden sm:inline">Back to Schedule</span>
-            </Link>
-            <div className="h-4 w-px bg-border hidden sm:block" />
-            <h1 className="font-bold text-lg hidden sm:block">Admin</h1>
-          </div>
+    <header className="border-b bg-background/95 backdrop-blur-sm sticky top-0 z-20">
+      <div className="container mx-auto px-4">
+        {/* Title row */}
+        <div className="flex items-center gap-3 h-12 border-b">
+          <Link
+            href={`/e/${eventSlug}/sessions`}
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1.5" />
+            <span className="hidden sm:inline">Back to event</span>
+          </Link>
+          <div className="h-4 w-px bg-border" />
+          <span className="font-semibold text-sm tracking-wide uppercase text-muted-foreground">
+            Admin
+          </span>
+        </div>
 
-          {/* Navigation Tabs */}
-          <nav className="flex items-center gap-1 overflow-x-auto">
-            {navItems.map((item) => (
-              <Button
-                key={item.href}
-                variant={item.active ? 'default' : 'ghost'}
-                size="sm"
-                asChild
+        {/* Tabs row */}
+        <nav
+          aria-label="Admin sections"
+          className="flex items-stretch overflow-x-auto scrollbar-thin -mx-4 px-4"
+        >
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={item.active ? 'page' : undefined}
+              className={cn(
+                'group relative inline-flex items-center gap-2 px-3 py-3 text-sm font-medium whitespace-nowrap transition-colors',
+                'hover:text-foreground',
+                item.active
+                  ? 'text-foreground'
+                  : 'text-muted-foreground'
+              )}
+            >
+              <span
                 className={cn(
-                  'whitespace-nowrap',
-                  item.active && 'pointer-events-none'
+                  'transition-colors',
+                  item.active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
                 )}
               >
-                <Link href={item.href}>
-                  {item.icon}
-                  <span className="ml-1.5 hidden sm:inline">{item.label}</span>
-                </Link>
-              </Button>
-            ))}
-          </nav>
-        </div>
+                {item.icon}
+              </span>
+              {item.label}
+              {item.active && (
+                <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary" />
+              )}
+            </Link>
+          ))}
+        </nav>
       </div>
     </header>
   )
