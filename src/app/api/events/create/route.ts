@@ -116,6 +116,7 @@ function transformToEventInsert(
     status: 'draft',
 
     vote_credits_per_user: state.voting.credits,
+    voting_mechanism: state.voting.mechanism,
     voting_opens_at: state.voting.votingOpensAt || null,
     voting_closes_at: state.voting.votingClosesAt || null,
     proposals_open_at: state.voting.proposalsOpenAt || null,

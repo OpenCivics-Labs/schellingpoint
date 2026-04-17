@@ -12,6 +12,9 @@ export type EventStatus =
 // Event visibility levels
 export type EventVisibility = 'public' | 'unlisted' | 'private';
 
+// Voting mechanisms supported for session selection
+export type VotingMechanism = 'quadratic' | 'linear' | 'approval';
+
 // Event role hierarchy
 export type EventRoleName =
   | 'owner'
@@ -67,6 +70,7 @@ export interface EventRow {
   location_geo: { x: number; y: number } | null;
   status: EventStatus;
   vote_credits_per_user: number;
+  voting_mechanism: VotingMechanism;
   voting_opens_at: string | null;
   voting_closes_at: string | null;
   proposals_open_at: string | null;
@@ -106,6 +110,7 @@ export interface Event {
   locationAddress: string | null;
   status: EventStatus;
   voteCreditsPerUser: number;
+  votingMechanism: VotingMechanism;
   votingOpensAt: Date | null;
   votingClosesAt: Date | null;
   proposalsOpenAt: Date | null;
@@ -153,6 +158,8 @@ export function transformEventRow(row: EventRow): Event {
     locationAddress: row.location_address,
     status: row.status,
     voteCreditsPerUser: row.vote_credits_per_user,
+    // Default to quadratic for rows created before the column existed.
+    votingMechanism: (row.voting_mechanism as VotingMechanism) || 'quadratic',
     votingOpensAt: row.voting_opens_at ? new Date(row.voting_opens_at) : null,
     votingClosesAt: row.voting_closes_at ? new Date(row.voting_closes_at) : null,
     proposalsOpenAt: row.proposals_open_at ? new Date(row.proposals_open_at) : null,

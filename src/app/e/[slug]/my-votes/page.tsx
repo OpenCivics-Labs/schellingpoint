@@ -102,11 +102,12 @@ export default function MyVotesPage() {
     if (!token) return
 
     const newVoteCount = Math.max(0, currentVotes + delta)
-    const newCredits = votesToCredits(newVoteCount)
+    const newCredits = votesToCredits(newVoteCount, event.votingMechanism)
 
     // Check if user has enough credits for adding a vote
     if (delta > 0) {
-      const additionalCost = newCredits - votesToCredits(currentVotes)
+      const additionalCost =
+        newCredits - votesToCredits(currentVotes, event.votingMechanism)
       if (additionalCost > remainingCredits) return
     }
 
@@ -224,8 +225,10 @@ export default function MyVotesPage() {
             {votes
               .sort((a, b) => b.vote_count - a.vote_count)
               .map((vote) => {
-                const costToAdd = nextVoteCost(vote.vote_count)
-                const canAddVote = remainingCredits >= costToAdd
+                const costToAdd = nextVoteCost(vote.vote_count, event.votingMechanism)
+                const isApproval = event.votingMechanism === 'approval'
+                const canAddVote =
+                  remainingCredits >= costToAdd && !(isApproval && vote.vote_count > 0)
 
                 return (
                   <Card key={vote.session_id} className="hover:border-primary/50 transition-all">

@@ -58,10 +58,13 @@ export default function DashboardPage() {
   const [recentSessions, setRecentSessions] = React.useState<any[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
 
-  // Calculate user's credits spent
+  // Calculate user's credits spent using the event's voting mechanism
   const creditsSpent = React.useMemo(() => {
-    return Object.values(userVotes).reduce((sum, votes) => sum + votesToCredits(votes), 0)
-  }, [userVotes])
+    return Object.values(userVotes).reduce(
+      (sum, votes) => sum + votesToCredits(votes, event.votingMechanism),
+      0
+    )
+  }, [userVotes, event.votingMechanism])
 
   const creditsRemaining = voteCredits - creditsSpent
 
