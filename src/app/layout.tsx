@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Space_Mono } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/hooks/useAuth'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const spaceMono = Space_Mono({ weight: ['400', '700'], subsets: ['latin'], variable: '--font-mono' })
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -44,7 +45,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark overflow-x-hidden">
-      <body className={`${inter.className} min-h-screen bg-background antialiased overflow-x-hidden`}>
+      <body className={`${inter.variable} ${spaceMono.variable} ${inter.className} min-h-screen bg-background antialiased overflow-x-hidden`}>
         <AuthProvider>
           {children}
         </AuthProvider>

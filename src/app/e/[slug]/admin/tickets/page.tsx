@@ -22,7 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AdminNav } from '@/components/admin/AdminNav'
+
 import { useEvent, useEventRole } from '@/contexts/EventContext'
 import { cn } from '@/lib/utils'
 import { getAccessToken } from '@/lib/supabase/client'
@@ -329,32 +329,16 @@ export default function AdminTicketsPage() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-background">
-        <AdminNav
-          eventSlug={eventSlug}
-          canManageSchedule={can('manageSchedule')}
-          canManageVenues={can('manageVenues')}
-        />
-        <main className="container mx-auto px-4 py-8">
-          <p className="text-muted-foreground">You don&apos;t have permission to view this page.</p>
-        </main>
-      </div>
+      <p className="text-muted-foreground">You don&apos;t have permission to view this page.</p>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav
-        eventSlug={eventSlug}
-        canManageSchedule={can('manageSchedule')}
-        canManageVenues={can('manageVenues')}
-      />
-      <main className="container mx-auto px-4 py-8">
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Ticket Tiers</h1>
+              <h1 className="text-2xl font-display font-bold">Ticket Tiers</h1>
               <p className="text-muted-foreground mt-1">
                 Configure ticket types and pricing
               </p>
@@ -692,7 +676,5 @@ export default function AdminTicketsPage() {
             </div>
           )}
         </div>
-      </main>
-    </div>
   )
 }

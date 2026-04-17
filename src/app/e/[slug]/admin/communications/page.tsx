@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AdminNav } from '@/components/admin/AdminNav'
+
 import { useAuth } from '@/hooks/useAuth'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
 import { getAccessToken } from '@/lib/supabase/client'
@@ -225,7 +225,7 @@ export default function AdminCommunicationsPage() {
 
   if (authLoading || roleLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
@@ -236,18 +236,10 @@ export default function AdminCommunicationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav
-        eventSlug={event.slug}
-        canManageSchedule={can('manageSchedule')}
-        canManageVenues={can('manageVenues')}
-      />
-
-      <main className="container mx-auto px-4 py-6">
         <div className="space-y-6">
           {/* Header */}
           <div>
-            <h1 className="text-2xl font-bold">Communications</h1>
+            <h1 className="text-2xl font-display font-bold">Communications</h1>
             <p className="text-sm text-muted-foreground">
               Announcements and session emails for {event.name}
             </p>
@@ -555,7 +547,5 @@ export default function AdminCommunicationsPage() {
           </Card>
         </div>
         </div>
-      </main>
-    </div>
   )
 }

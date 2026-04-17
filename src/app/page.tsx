@@ -54,7 +54,7 @@ function EventCard({ event, featured = false }: { event: EventRow & { attendee_c
 
   return (
     <Link href={`/e/${event.slug}`} className="block group">
-      <Card className={`overflow-hidden card-hover border-border/50 hover:border-primary/30 h-full ${featured ? 'min-w-[320px] sm:min-w-[360px]' : ''}`}>
+      <Card className={`overflow-hidden card-hover h-full ${featured ? 'min-w-[320px] sm:min-w-[360px]' : ''}`}>
         {/* Banner/Gradient Header */}
         <div
           className="h-24 sm:h-32 relative overflow-hidden"
@@ -114,50 +114,50 @@ function EventCard({ event, featured = false }: { event: EventRow & { attendee_c
   );
 }
 
-// Hero Section
+// Hero Section — "Network Discovery"
 function HeroSection() {
   return (
     <section className="relative overflow-hidden">
-      {/* Animated background */}
-      <div className="absolute inset-0 animated-gradient" />
-
-      {/* Gradient blobs */}
+      {/* Warm radial glow from center — gives the hero atmosphere */}
       <div
-        className="absolute top-20 left-1/4 w-96 h-96 rounded-full opacity-20 blur-3xl animate-gradient-drift"
-        style={{ background: 'radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)' }}
-      />
-      <div
-        className="absolute bottom-20 right-1/4 w-80 h-80 rounded-full opacity-15 blur-3xl animate-gradient-drift-reverse"
-        style={{ background: 'radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%)' }}
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse 80% 60% at 50% 30%, hsl(var(--signal) / 0.06) 0%, transparent 60%)',
+        }}
       />
 
-      <div className="relative container mx-auto px-4 py-20 sm:py-28 lg:py-36">
+      {/* Geodesic mesh overlay — Fuller-inspired triangulated texture */}
+      <div className="absolute inset-0 geodesic-mesh opacity-[0.06]" />
+
+      <div className="relative container mx-auto px-4 py-12 sm:py-20 lg:py-28">
         <div className="max-w-3xl mx-auto text-center">
-          <Badge variant="secondary" className="mb-6">
-            <Sparkles className="h-3 w-3 mr-1" />
-            Participant-driven events
-          </Badge>
-
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
-            Power your unconference with{' '}
-            <span className="text-primary neon-text">Schelling Point</span>
+          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-6">
+            Find Your{' '}
+            <span className="text-primary">Schelling Point</span>
           </h1>
 
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            The platform for participant-driven events with quadratic voting.
-            Let your community shape the agenda.
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto text-balance">
+            The coordination platform for participant-driven events.
+            Propose sessions, vote with quadratic voting, and let your community shape the agenda.
           </p>
 
-          <div className="flex flex-wrap justify-center gap-4">
-            <Button asChild size="lg" className="btn-primary-glow">
+          {/* Protocol descriptor block */}
+          <div className="protocol-box border-border/60 text-muted-foreground max-w-sm mx-auto mb-10 text-left">
+            <span className="text-primary font-bold">UNCONFERENCE PROTOCOL v2.0</span>
+            <br />
+            <span className="text-foreground/70">propose → vote → converge → meet</span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+            <Button asChild size="lg" className="w-full sm:w-auto">
               <Link href="/create">
-                Create Your Event
+                Join the Network
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg">
+            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
               <a href="#upcoming">
-                Browse Events
+                Explore Events
               </a>
             </Button>
           </div>
@@ -230,26 +230,18 @@ function UpcomingEventsGrid({ events, showViewAll }: { events: (EventRow & { att
 // Create Event CTA
 function CreateEventCTA() {
   return (
-    <section className="py-12 sm:py-16 bg-muted/30">
+    <section className="py-12 sm:py-16">
       <div className="container mx-auto px-4">
-        <Card className="relative overflow-hidden border-primary/20">
-          {/* Background gradient */}
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{
-              background: 'radial-gradient(ellipse 80% 50% at 50% 100%, hsl(var(--primary)) 0%, transparent 70%)',
-            }}
-          />
-
-          <CardContent className="relative py-12 text-center">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-3">
+        <Card accent="top" accentColor="hsl(var(--signal))">
+          <CardContent className="py-12 text-center">
+            <h2 className="text-2xl sm:text-3xl font-display font-bold mb-3">
               Ready to host your own event?
             </h2>
             <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
               Create an unconference, hackathon, or community gathering with
               democratic session selection powered by quadratic voting.
             </p>
-            <Button asChild size="lg" className="btn-primary-glow">
+            <Button asChild size="lg">
               <Link href="/create">
                 Get Started
                 <ArrowRight className="ml-2 h-4 w-4" />

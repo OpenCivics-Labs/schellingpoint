@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { AdminNav } from '@/components/admin/AdminNav'
+
 import { useAuth } from '@/hooks/useAuth'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
 import { CSVSessionImport } from '@/components/admin/CSVSessionImport'
@@ -287,35 +287,25 @@ export default function AdminCreateSessionPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <AdminNav eventSlug={slug} canManageSchedule={true} canManageVenues={true} />
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
   }
 
   if (!user || !isAdmin) {
     return (
-      <div className="min-h-screen bg-background">
-        <AdminNav eventSlug={slug} canManageSchedule={true} canManageVenues={true} />
-        <div className="container mx-auto px-4 py-8">
-          <Card>
-            <CardContent className="py-8 text-center">
-              <p className="text-muted-foreground">You don't have permission to create sessions.</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <Card>
+        <CardContent className="py-8 text-center">
+          <p className="text-muted-foreground">You don't have permission to create sessions.</p>
+        </CardContent>
+      </Card>
     )
   }
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-background">
-        <AdminNav eventSlug={slug} canManageSchedule={true} canManageVenues={true} />
-        <div className="container mx-auto px-4 py-8 max-w-md">
+      <div className="max-w-md mx-auto">
           <Card>
             <CardHeader className="text-center">
               <div className="flex justify-center mb-4">
@@ -361,17 +351,13 @@ export default function AdminCreateSessionPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav eventSlug={slug} canManageSchedule={true} canManageVenues={true} />
-
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <div className="max-w-2xl">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold">Create Session</h1>
+          <h1 className="text-2xl font-display font-bold">Create Session</h1>
           <p className="text-muted-foreground mt-1">
             Add a curated session for {event.name}
           </p>
@@ -789,6 +775,5 @@ export default function AdminCreateSessionPage() {
         </Card>
         )}
       </div>
-    </div>
   )
 }

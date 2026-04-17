@@ -17,7 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { AdminNav } from '@/components/admin/AdminNav'
+
 import { useAuth } from '@/hooks/useAuth'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
 import { cn } from '@/lib/utils'
@@ -341,11 +341,8 @@ export default function AdminTracksPage() {
 
   if (authLoading || roleLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <AdminNav eventSlug={slug} canManageSchedule={true} canManageVenues={true} />
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -355,13 +352,10 @@ export default function AdminTracksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav eventSlug={slug} canManageSchedule={can('manageSchedule')} canManageVenues={can('manageVenues')} />
-
-      <main className="container mx-auto px-4 py-6 max-w-4xl">
+      <div className="max-w-4xl">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Track Management</h1>
+            <h1 className="text-2xl font-display font-bold">Track Management</h1>
             <p className="text-muted-foreground">Organize sessions by topic or theme</p>
           </div>
           {!isCreating && !editingTrack && (
@@ -550,7 +544,6 @@ export default function AdminTracksPage() {
             )}
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
   )
 }

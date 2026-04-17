@@ -13,15 +13,15 @@ import {
   Settings,
   LogOut,
   BarChart3,
-  Home,
+  ChevronLeft,
+  Menu,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { CreditBar } from '@/components/CreditBar'
+import { Progress } from '@/components/ui/progress'
 import { NotificationBell } from '@/components/NotificationBell'
 import { OnboardingModal } from '@/components/auth/OnboardingModal'
 import { SettingsModal } from '@/components/SettingsModal'
-import { Footer } from '@/components/Footer'
 import { useAuth } from '@/hooks/useAuth'
 import { cn, votesToCredits } from '@/lib/utils'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
@@ -48,21 +48,14 @@ interface DashboardLayoutProps {
   children: React.ReactNode
 }
 
-// Navigation items are now generated dynamically based on event slug
 function getNavItems(eventSlug: string) {
   return [
-    { href: `/e/${eventSlug}/dashboard`, label: 'Dashboard', icon: BarChart3 },
-    { href: `/e/${eventSlug}/sessions`, label: 'Sessions', icon: Presentation },
-    { href: `/e/${eventSlug}/schedule`, label: 'Schedule', icon: Calendar },
-    { href: `/e/${eventSlug}/my-schedule`, label: 'My Schedule', icon: Heart },
-    { href: `/e/${eventSlug}/my-votes`, label: 'My Votes', icon: ClipboardList },
-    { href: `/e/${eventSlug}/participants`, label: 'Participants', icon: Users },
-  ]
-}
-
-function getActionItems(eventSlug: string) {
-  return [
-    { href: `/e/${eventSlug}/propose`, label: 'Propose Session', icon: PlusCircle },
+    { href: `/e/${eventSlug}/dashboard`, label: 'Dashboard', shortLabel: 'Dash', icon: BarChart3 },
+    { href: `/e/${eventSlug}/sessions`, label: 'Sessions', shortLabel: 'Sess', icon: Presentation },
+    { href: `/e/${eventSlug}/schedule`, label: 'Schedule', shortLabel: 'Sched', icon: Calendar },
+    { href: `/e/${eventSlug}/my-schedule`, label: 'My Schedule', shortLabel: 'Saved', icon: Heart },
+    { href: `/e/${eventSlug}/my-votes`, label: 'My Votes', shortLabel: 'Votes', icon: ClipboardList },
+    { href: `/e/${eventSlug}/participants`, label: 'Participants', shortLabel: 'People', icon: Users },
   ]
 }
 
@@ -74,18 +67,14 @@ function getCachedVotes(): Record<string, number> | null {
   if (typeof window === 'undefined') return null
   try {
     const cached = sessionStorage.getItem(VOTES_CACHE_KEY)
-    if (cached) {
-      return JSON.parse(cached)
-    }
+    if (cached) return JSON.parse(cached)
   } catch {}
   return null
 }
 
 function getCachedUserId(): string | null {
   if (typeof window === 'undefined') return null
-  try {
-    return sessionStorage.getItem(VOTES_USER_KEY)
-  } catch {}
+  try { return sessionStorage.getItem(VOTES_USER_KEY) } catch {}
   return null
 }
 
@@ -105,18 +94,46 @@ function clearCachedVotes() {
   } catch {}
 }
 
+// ============================================================================
+// Credit Gauge — compact sidebar widget
+// ============================================================================
+
+function CreditGauge({ total, spent }: { total: number; spent: number }) {
+  const remaining = total - spent
+  const pct = total > 0 ? ((total - spent) / total) * 100 : 0
+
+  return (
+    <div className="px-4 py-3 border-t border-border">
+      <div className="flex items-baseline justify-between mb-1.5">
+        <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+          Credits
+        </span>
+        <span className="font-mono text-sm font-bold tabular-nums text-primary">
+          {remaining}<span className="text-muted-foreground font-normal">/{total}</span>
+        </span>
+      </div>
+      <Progress value={pct} className="h-1.5" />
+      <p className="text-[9px] font-mono text-muted-foreground mt-1">
+        {'>'} cost = votes²
+      </p>
+    </div>
+  )
+}
+
+// ============================================================================
+// Main Layout
+// ============================================================================
+
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname()
   const router = useRouter()
   const { user, profile, signOut, needsOnboarding, refreshProfile } = useAuth()
 
-  // Get event context
   const event = useEvent()
   const { isAdmin, voteCredits } = useEventRole()
 
-  // Generate nav items based on event slug
   const navItems = React.useMemo(() => getNavItems(event.slug), [event.slug])
-  const actionItems = React.useMemo(() => getActionItems(event.slug), [event.slug])
+  const [mobileNavOpen, setMobileNavOpen] = React.useState(false)
 
   const handleSignOut = async () => {
     await signOut()
@@ -125,16 +142,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [showOnboarding, setShowOnboarding] = React.useState(false)
   const [showSettings, setShowSettings] = React.useState(false)
 
-  // Initialize userVotes from cache immediately to prevent flashing
+  // Vote state with caching
   const [userVotes, setUserVotes] = React.useState<Record<string, number>>(() => {
-    const cached = getCachedVotes()
-    return cached || {}
+    return getCachedVotes() || {}
   })
-  const [votesLoaded, setVotesLoaded] = React.useState(() => {
-    return getCachedVotes() !== null
-  })
+  const [votesLoaded, setVotesLoaded] = React.useState(() => getCachedVotes() !== null)
 
-  // Calculate credits spent from user votes using the event's voting mechanism
   const creditsSpent = React.useMemo(() => {
     return Object.values(userVotes).reduce(
       (sum, votes) => sum + votesToCredits(votes, event.votingMechanism),
@@ -142,7 +155,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     )
   }, [userVotes, event.votingMechanism])
 
-  // Fetch user's votes when user changes, with caching
   React.useEffect(() => {
     if (!user) {
       setUserVotes({})
@@ -150,58 +162,40 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       setVotesLoaded(true)
       return
     }
-
-    // Check if cached data is for the current user
     const cachedUserId = getCachedUserId()
     if (cachedUserId !== user.id) {
-      // Different user, clear cache and reset
       clearCachedVotes()
       setUserVotes({})
     }
-
     const fetchUserVotes = async () => {
       const token = getAccessToken()
-      if (!token) {
-        setVotesLoaded(true)
-        return
-      }
-
+      if (!token) { setVotesLoaded(true); return }
       try {
         const response = await fetch(
           `${SUPABASE_URL}/rest/v1/votes?user_id=eq.${user.id}&event_id=eq.${event.id}&select=session_id,vote_count`,
-          {
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${token}`,
-            },
-          }
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` } }
         )
-
         if (response.ok) {
           const data = await response.json()
           const votesMap: Record<string, number> = {}
-          data.forEach((v: { session_id: string; vote_count: number }) => {
-            votesMap[v.session_id] = v.vote_count
-          })
+          data.forEach((v: { session_id: string; vote_count: number }) => { votesMap[v.session_id] = v.vote_count })
           setUserVotes(votesMap)
           setCachedVotes(user.id, votesMap)
         }
-      } catch (err) {
-        console.error('Error fetching user votes:', err)
-      } finally {
-        setVotesLoaded(true)
-      }
+      } catch (err) { console.error('Error fetching user votes:', err) }
+      finally { setVotesLoaded(true) }
     }
-
     fetchUserVotes()
   }, [user, event.id])
 
-  // Show onboarding modal when needed
   React.useEffect(() => {
-    if (needsOnboarding) {
-      setShowOnboarding(true)
-    }
+    if (needsOnboarding) setShowOnboarding(true)
   }, [needsOnboarding])
+
+  // Close mobile nav on route change
+  React.useEffect(() => {
+    setMobileNavOpen(false)
+  }, [pathname])
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false)
@@ -209,104 +203,146 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Header */}
-      <header className="border-b sticky top-0 bg-background/95 backdrop-blur z-10">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-14">
-            {/* Logo */}
-            <div className="flex items-center gap-4">
-              <Link href={`/e/${event.slug}`} className="flex items-center gap-2 font-bold text-lg">
-                {event.logoUrl ? (
-                  <img src={event.logoUrl} alt={event.name} className="h-8 w-8 rounded object-contain" />
-                ) : (
-                  <div className="h-8 w-8 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
-                    {event.name.charAt(0)}
-                  </div>
+    <div className="min-h-screen bg-background flex">
+      {/* ─── Desktop Sidebar ─── */}
+      <aside className="hidden md:flex flex-col w-[220px] lg:w-[240px] flex-shrink-0 border-r border-border bg-card fixed inset-y-0 left-0 z-20">
+        {/* Event branding */}
+        <div className="p-4 border-b border-border">
+          <Link href={`/e/${event.slug}`} className="flex items-center gap-2.5 group">
+            {event.logoUrl ? (
+              <img src={event.logoUrl} alt={event.name} className="h-8 w-8 rounded object-contain flex-shrink-0" />
+            ) : (
+              <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center text-primary font-display font-bold text-sm flex-shrink-0">
+                {event.name.charAt(0)}
+              </div>
+            )}
+            <div className="min-w-0">
+              <div className="font-display font-bold text-sm leading-tight truncate group-hover:text-primary transition-colors">
+                {event.name}
+              </div>
+              <div className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
+                Schelling Point
+              </div>
+            </div>
+          </Link>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 py-2 px-2 space-y-0.5 overflow-y-auto">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            const isActive = pathname === item.href
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all',
+                  isActive
+                    ? 'text-foreground bg-primary/8 border-l-[3px] border-l-primary font-medium'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 border-l-[3px] border-l-transparent'
                 )}
-                <div className="hidden sm:flex flex-col">
-                  <span className="font-bold text-lg leading-tight">{event.name}</span>
-                  <span className="text-xs text-muted-foreground leading-tight font-normal">Schelling Point</span>
-                </div>
+              >
+                <Icon className="h-4 w-4 flex-shrink-0" strokeWidth={1.5} />
+                <span className="font-mono text-xs uppercase tracking-wider">{item.label}</span>
               </Link>
-              {isAdmin && (
-                <Badge variant="secondary" className="text-xs bg-[#B2FF00]/20 text-[#B2FF00] border-[#B2FF00]/30">
-                  Admin
-                </Badge>
-              )}
-              <Button variant="ghost" size="sm" asChild className="hidden sm:flex">
-                <Link href={`/e/${event.slug}`}>
-                  <Home className="h-4 w-4 mr-1" />
-                  Home
-                </Link>
-              </Button>
-            </div>
+            )
+          })}
 
-            {/* User Actions */}
-            <div className="flex items-center gap-3">
-              {!user && (
-                <Link
-                  href="/login"
-                  className="flex items-center justify-center px-2 md:px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors flex-shrink-0"
-                >
-                  Sign In
-                </Link>
-              )}
-              {user && (
-                <>
-                  {isAdmin && (
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/e/${event.slug}/admin`}>
-                        <Settings className="h-4 w-4 mr-1" />
-                        Admin
-                      </Link>
-                    </Button>
-                  )}
-                  <NotificationBell />
-                  <button
-                    onClick={() => setShowSettings(true)}
-                    className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                  >
-                    <span className="text-sm text-muted-foreground hidden sm:inline">
-                      {profile?.display_name || user.email}
+          {/* Propose action */}
+          <div className="pt-3 px-1">
+            <Button asChild size="sm" className="w-full justify-start gap-2 font-mono text-xs uppercase tracking-wider">
+              <Link href={`/e/${event.slug}/propose`}>
+                <PlusCircle className="h-4 w-4" strokeWidth={1.5} />
+                Propose
+              </Link>
+            </Button>
+          </div>
+
+          {/* Admin link */}
+          {isAdmin && (
+            <div className="pt-1 px-1">
+              <Link
+                href={`/e/${event.slug}/admin`}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2 rounded-md text-xs font-mono uppercase tracking-wider transition-all',
+                  pathname?.startsWith(`/e/${event.slug}/admin`)
+                    ? 'text-primary bg-primary/8'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                )}
+              >
+                <Settings className="h-4 w-4" strokeWidth={1.5} />
+                Admin
+              </Link>
+            </div>
+          )}
+        </nav>
+
+        {/* Credit gauge */}
+        {user && <CreditGauge total={voteCredits} spent={creditsSpent} />}
+
+        {/* User section */}
+        <div className="p-3 border-t border-border">
+          {user ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowSettings(true)}
+                className="flex items-center gap-2 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+              >
+                <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-border flex-shrink-0">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-xs font-mono font-medium text-muted-foreground">
+                      {(profile?.display_name || user.email || '?')[0].toUpperCase()}
                     </span>
-                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-border">
-                      {profile?.avatar_url ? (
-                        <img
-                          src={profile.avatar_url}
-                          alt={profile.display_name || ''}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-sm font-medium text-muted-foreground">
-                          {(profile?.display_name || user.email || '?')[0].toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                  <Button variant="ghost" size="sm" onClick={handleSignOut} title="Sign out">
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground truncate">
+                  {profile?.display_name || user.email?.split('@')[0]}
+                </span>
+              </button>
+              <div className="flex items-center gap-1">
+                <NotificationBell />
+                <Button variant="ghost" size="icon-sm" onClick={handleSignOut} title="Sign out">
+                  <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
+                </Button>
+              </div>
             </div>
+          ) : (
+            <Link
+              href="/login"
+              className="flex items-center justify-center px-3 py-2 text-xs font-mono uppercase tracking-wider rounded-md bg-secondary text-secondary-foreground hover:bg-secondary/80 transition-colors"
+            >
+              Sign In
+            </Link>
+          )}
+        </div>
+      </aside>
+
+      {/* ─── Mobile Header ─── */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-30 border-b border-border bg-background">
+        <div className="flex items-center justify-between h-12 px-4">
+          <Link href={`/e/${event.slug}`} className="flex items-center gap-2 min-w-0 flex-1 mr-2">
+            <div className="h-6 w-6 rounded bg-primary/10 flex items-center justify-center text-primary font-display font-bold text-xs flex-shrink-0">
+              {event.name.charAt(0)}
+            </div>
+            <span className="font-display font-bold text-sm truncate">{event.name}</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            {user && <NotificationBell />}
+            <button
+              onClick={() => setMobileNavOpen(!mobileNavOpen)}
+              className="p-2 rounded-md text-muted-foreground hover:text-foreground"
+            >
+              {mobileNavOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
         </div>
-      </header>
 
-      {/* Credits Bar */}
-      {user && (
-        <div className="border-b bg-muted/30">
-          <div className="container mx-auto px-4 py-3">
-            <CreditBar total={voteCredits} spent={creditsSpent} />
-          </div>
-        </div>
-      )}
-
-      {/* Navigation Tabs */}
-      <div className="border-b bg-background">
-        <div className="container mx-auto px-4">
-          <nav className="flex items-center gap-1 py-2 -mb-px overflow-x-auto scrollbar-hide">
+        {/* Mobile nav dropdown */}
+        {mobileNavOpen && (
+          <div className="border-t border-border bg-card px-4 py-3 space-y-1 animate-slide-down">
             {navItems.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.href
@@ -315,44 +351,84 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center justify-center gap-1.5 px-2 md:px-3 py-2.5 min-h-[44px] min-w-[44px] text-xs md:text-sm font-medium rounded-md whitespace-nowrap transition-colors flex-shrink-0',
+                    'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all',
                     isActive
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                      ? 'text-foreground bg-primary/8 border-l-[3px] border-l-primary'
+                      : 'text-muted-foreground hover:text-foreground border-l-[3px] border-l-transparent'
                   )}
                 >
-                  <Icon className="h-4 w-4 flex-shrink-0" />
-                  <span className="hidden sm:inline">{item.label}</span>
+                  <Icon className="h-4 w-4" strokeWidth={1.5} />
+                  <span className="font-mono text-xs uppercase tracking-wider">{item.label}</span>
                 </Link>
               )
             })}
-
-            {actionItems.map((item) => {
-              const Icon = item.icon
-              return (
+            <Link
+              href={`/e/${event.slug}/propose`}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-primary font-mono text-xs uppercase tracking-wider"
+            >
+              <PlusCircle className="h-4 w-4" strokeWidth={1.5} />
+              Propose Session
+            </Link>
+            {isAdmin && (
+              <Link
+                href={`/e/${event.slug}/admin`}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-muted-foreground font-mono text-xs uppercase tracking-wider"
+              >
+                <Settings className="h-4 w-4" strokeWidth={1.5} />
+                Admin
+              </Link>
+            )}
+            {user ? (
+              <>
+                <div className="pt-2 border-t border-border mt-2">
+                  <CreditGauge total={voteCredits} spent={creditsSpent} />
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-border mt-2 px-3">
+                  <button
+                    onClick={() => { setMobileNavOpen(false); setShowSettings(true); }}
+                    className="flex items-center gap-2 text-xs text-muted-foreground"
+                  >
+                    <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center overflow-hidden border border-border">
+                      {profile?.avatar_url ? (
+                        <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-[10px] font-mono font-medium text-muted-foreground">
+                          {(profile?.display_name || user.email || '?')[0].toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <span className="truncate max-w-[140px]">{profile?.display_name || user.email?.split('@')[0]}</span>
+                  </button>
+                  <Button variant="ghost" size="icon-sm" onClick={handleSignOut} title="Sign out">
+                    <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="pt-2 border-t border-border mt-2 px-3">
                 <Link
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center justify-center gap-1.5 px-2 md:px-3 py-2.5 min-h-[44px] min-w-[44px] text-xs md:text-sm font-medium rounded-md whitespace-nowrap bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex-shrink-0 ml-auto"
+                  href="/login"
+                  className="flex items-center justify-center py-2.5 text-xs font-mono uppercase tracking-wider rounded-md bg-primary text-primary-foreground"
                 >
-                  <Icon className="h-4 w-4 flex-shrink-0" />
-                  <span className="hidden sm:inline">{item.label}</span>
+                  Sign In
                 </Link>
-              )
-            })}
-          </nav>
-        </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
-        {children}
+      {/* ─── Main Content ─── */}
+      <main className="flex-1 md:ml-[220px] lg:ml-[240px] min-h-screen">
+        {/* Mobile spacer for fixed header */}
+        <div className="h-12 md:hidden" />
+
+        <div className="p-4 md:p-6 lg:p-8">
+          {children}
+        </div>
       </main>
 
-      {/* Footer */}
-      <Footer variant="minimal" className="mt-auto" event={event} />
-
-      {/* Onboarding Modal */}
+      {/* Modals */}
       {showOnboarding && user && (
         <OnboardingModal
           userId={user.id}
@@ -361,8 +437,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           suggestedTopics={event.suggestedTopics}
         />
       )}
-
-      {/* Settings Modal */}
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}

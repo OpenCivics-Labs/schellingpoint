@@ -19,7 +19,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { AdminNav } from '@/components/admin/AdminNav'
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -357,7 +357,7 @@ export default function AdminSetupPage() {
 
   if (authLoading || roleLoading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
@@ -368,14 +368,6 @@ export default function AdminSetupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav
-        eventSlug={event.slug}
-        canManageSchedule={can('manageSchedule')}
-        canManageVenues={can('manageVenues')}
-      />
-
-      <main className="container mx-auto px-4 py-6">
         <div className="space-y-6">
           {/* Info Card */}
           <Card className="bg-muted/30">
@@ -627,8 +619,6 @@ export default function AdminSetupPage() {
             </Card>
           )}
         </div>
-      </main>
-    </div>
   )
 }
 

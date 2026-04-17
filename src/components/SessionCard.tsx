@@ -4,20 +4,18 @@ import * as React from 'react'
 import Link from 'next/link'
 import { Heart, Mic, Wrench, MessageSquare, Users, Monitor, Plus, Minus, MapPin, Clock, ChevronRight } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { RSVPIndicator } from '@/components/RSVPButton'
 import { cn, votesToCredits, nextVoteCost, type VotingMechanism } from '@/lib/utils'
 
 const formatIcons: Record<string, React.ReactNode> = {
-  talk: <Mic className="h-4 w-4" />,
-  workshop: <Wrench className="h-4 w-4" />,
-  discussion: <MessageSquare className="h-4 w-4" />,
-  panel: <Users className="h-4 w-4" />,
-  demo: <Monitor className="h-4 w-4" />,
+  talk: <Mic className="h-3.5 w-3.5" strokeWidth={1.5} />,
+  workshop: <Wrench className="h-3.5 w-3.5" strokeWidth={1.5} />,
+  discussion: <MessageSquare className="h-3.5 w-3.5" strokeWidth={1.5} />,
+  panel: <Users className="h-3.5 w-3.5" strokeWidth={1.5} />,
+  demo: <Monitor className="h-3.5 w-3.5" strokeWidth={1.5} />,
 }
 
-// Format time from ISO string to readable format (e.g., "9:00 AM")
 function formatTime(isoString: string): string {
   const date = new Date(isoString)
   return date.toLocaleTimeString('en-US', {
@@ -57,9 +55,7 @@ interface SessionCardProps {
   onToggleFavorite?: (sessionId: string) => void
   showVoting?: boolean
   isLoggedIn?: boolean
-  /** User's RSVP status for this session */
   userRsvpStatus?: 'confirmed' | 'waitlist' | null
-  /** Event voting mechanism (defaults to quadratic for back-compat) */
   votingMechanism?: VotingMechanism
 }
 
@@ -79,8 +75,6 @@ export function SessionCard({
   const currentCredits = votesToCredits(userVotes, votingMechanism)
   const costToAdd = nextVoteCost(userVotes, votingMechanism)
   const canAddVote = remainingCredits >= costToAdd
-  // Approval voting is binary per-session: a user either approves a session
-  // (1 credit) or does not. Hide the increment control past a single vote.
   const isApproval = votingMechanism === 'approval'
   const showAddControl = !isApproval || userVotes === 0
 
@@ -96,125 +90,138 @@ export function SessionCard({
     }
   }
 
-  return (
-    <Card className="overflow-hidden card-hover group border-border/50 hover:border-primary/30">
-      <CardContent className="p-5">
-        <div className="space-y-4">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-4">
-            <Link href={`/e/${eventSlug}/sessions/${session.id}`} className="flex-1 min-w-0 cursor-pointer">
-              <div className="flex items-center gap-1.5 sm:gap-2 text-sm text-muted-foreground mb-1.5 flex-wrap">
-                <span className="flex items-center gap-1.5 whitespace-nowrap">
-                  {formatIcons[session.format] || <Mic className="h-4 w-4" />}
-                  <span className="capitalize">{session.format}</span>
-                </span>
-                <span className="text-muted-foreground/50">•</span>
-                <span className="whitespace-nowrap">{session.duration} min</span>
-                {session.track && (
-                  <>
-                    <span className="text-muted-foreground/50 hidden sm:inline">•</span>
-                    <span className="flex items-center gap-1 w-full sm:w-auto mt-0.5 sm:mt-0">
-                      {session.track.color && (
-                        <span
-                          className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: session.track.color }}
-                        />
-                      )}
-                      <span className="truncate text-xs sm:text-sm">{session.track.name}</span>
-                    </span>
-                  </>
-                )}
-              </div>
-              <h3 className="font-semibold line-clamp-2 group-hover:text-primary transition-colors">
-                {session.title}
-                <ChevronRight className="inline h-4 w-4 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </h3>
-              {session.host_name && (() => {
-                const cohostNames = (session.cohosts || [])
-                  .map(c => c.profile?.display_name)
-                  .filter(Boolean) as string[]
-                let byLine = `by ${session.host_name}`
-                if (cohostNames.length === 1) {
-                  byLine += ` & ${cohostNames[0]}`
-                } else if (cohostNames.length > 1) {
-                  byLine += ` & ${cohostNames.length} others`
-                }
-                return (
-                  <p className="text-sm text-muted-foreground mt-1 whitespace-nowrap">
-                    {byLine}
-                  </p>
-                )
-              })()}
-            </Link>
+  const trackColor = session.track?.color || 'hsl(var(--signal))'
 
-            {/* Favorite Button */}
+  return (
+    <Card
+      accent="left"
+      accentColor={trackColor}
+      className={cn(
+        'overflow-hidden group transition-all duration-200',
+        'hover:border-[hsl(var(--signal)_/_0.3)]',
+        'hover:shadow-[inset_3px_0_0_var(--tw-shadow-color)]',
+      )}
+      style={{ '--tw-shadow-color': trackColor } as React.CSSProperties}
+    >
+      <CardContent className="p-3.5 sm:p-5">
+        <div className="space-y-2.5 sm:space-y-3">
+          {/* Header: format label + duration (monospace system layer) */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider">
+                {formatIcons[session.format] || <Mic className="h-3.5 w-3.5" strokeWidth={1.5} />}
+                {session.format}
+              </span>
+              <span className="text-border">·</span>
+              <span className="font-mono text-[11px] tracking-wider">{session.duration}M</span>
+              {session.track && (
+                <>
+                  <span className="text-border hidden sm:inline">·</span>
+                  <span className="hidden sm:flex items-center gap-1.5 text-xs">
+                    <span
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: session.track.color || undefined }}
+                    />
+                    {session.track.name}
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* Favorite */}
             {onToggleFavorite && isLoggedIn && (
               <button
                 onClick={() => onToggleFavorite(session.id)}
                 title={isFavorited ? 'Remove from My Schedule' : 'Save to My Schedule'}
                 className={cn(
-                  'p-2.5 rounded-full transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center',
+                  'p-2 rounded-md transition-colors',
                   isFavorited
                     ? 'text-red-500 bg-red-500/10 hover:bg-red-500/20'
                     : 'text-muted-foreground hover:text-red-500 hover:bg-muted'
                 )}
               >
-                <Heart className={cn('h-5 w-5', isFavorited && 'fill-current')} />
+                <Heart className={cn('h-4 w-4', isFavorited && 'fill-current')} />
               </button>
             )}
           </div>
 
-          {/* Description */}
+          {/* Title (human layer — display font) */}
           <Link href={`/e/${eventSlug}/sessions/${session.id}`} className="block">
-            {session.description && (
+            <h3 className="font-display font-semibold text-[15px] leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+              {session.title}
+              <ChevronRight className="inline h-3.5 w-3.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </h3>
+          </Link>
+
+          {/* Host */}
+          {session.host_name && (() => {
+            const cohostNames = (session.cohosts || [])
+              .map(c => c.profile?.display_name)
+              .filter(Boolean) as string[]
+            let byLine = session.host_name
+            if (cohostNames.length === 1) byLine += ` & ${cohostNames[0]}`
+            else if (cohostNames.length > 1) byLine += ` & ${cohostNames.length} others`
+            return (
+              <p className="text-xs text-muted-foreground">
+                {byLine}
+              </p>
+            )
+          })()}
+
+          {/* Description */}
+          {session.description && (
+            <Link href={`/e/${eventSlug}/sessions/${session.id}`} className="block">
               <p className="text-sm text-muted-foreground line-clamp-2 hover:text-foreground/80 transition-colors">
                 {session.description}
               </p>
-            )}
-          </Link>
+            </Link>
+          )}
 
-          {/* Tags */}
+          {/* Tags — monospace diagram labels */}
           {session.topic_tags && session.topic_tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {session.topic_tags.slice(0, 3).map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
+                <span
+                  key={tag}
+                  className="inline-flex items-center rounded-sm border border-border bg-surface-2 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground"
+                >
                   {tag}
-                </Badge>
+                </span>
               ))}
             </div>
           )}
 
           {/* Scheduled info */}
           {(session.venue || session.is_self_hosted || session.self_hosted_start_time) && (
-            <div className="flex items-center gap-4 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
-              <div className="flex items-center gap-1.5">
-                <MapPin className="h-4 w-4" />
+            <div className="flex items-center gap-3 text-xs font-mono text-muted-foreground bg-surface-2 rounded-md p-2.5">
+              <span className="flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5" strokeWidth={1.5} />
                 {session.is_self_hosted ? (
-                  <span className="flex items-center gap-1">
-                    <Badge variant="secondary" className="text-xs">Self-Hosted</Badge>
-                    {session.custom_location && (
-                      <span className="truncate text-xs">{session.custom_location}</span>
-                    )}
-                  </span>
+                  session.custom_location || 'Self-Hosted'
                 ) : session.venue ? (
-                  <span>{session.venue.name}</span>
+                  session.venue.name
                 ) : null}
-              </div>
+              </span>
               {(session.time_slot?.start_time || session.self_hosted_start_time) && (
-                <div className="flex items-center gap-1.5">
-                  <Clock className="h-4 w-4" />
-                  <span>{formatTime(session.time_slot?.start_time || session.self_hosted_start_time!)}</span>
-                </div>
+                <span className="flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  {formatTime(session.time_slot?.start_time || session.self_hosted_start_time!)}
+                </span>
               )}
             </div>
           )}
 
-          {/* Vote stats */}
+          {/* Signal meter: vote count + controls */}
           <div className="flex items-center justify-between pt-3 border-t border-border/50">
-            <div className="flex items-center gap-4">
-              <div className="text-sm">
-                <span className="font-semibold text-primary neon-text">{session.total_votes}</span>
-                <span className="text-muted-foreground"> total votes</span>
+            <div className="flex items-center gap-3">
+              {/* Signal strength — vote count as monospace readout */}
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-mono text-lg font-bold text-primary tabular-nums">
+                  {session.total_votes}
+                </span>
+                <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  votes
+                </span>
               </div>
               {/* RSVP indicator for scheduled sessions */}
               {session.status === 'scheduled' && session.venue?.capacity && (
@@ -226,31 +233,35 @@ export function SessionCard({
               )}
             </div>
 
-            {/* Voting controls */}
+            {/* Voting controls — precise instrument buttons */}
             {showVoting && isLoggedIn && onVote && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <Button
-                  size="icon"
+                  size="icon-sm"
                   variant="outline"
                   onClick={handleRemoveVote}
                   disabled={userVotes === 0}
+                  className="rounded-md"
                 >
-                  <Minus className="h-4 w-4" />
+                  <Minus className="h-3.5 w-3.5" strokeWidth={1.5} />
                 </Button>
 
-                <div className="min-w-[60px] text-center">
-                  <div className="font-semibold">{userVotes}</div>
-                  <div className="text-xs text-muted-foreground">{currentCredits} cr</div>
+                <div className="min-w-[52px] text-center">
+                  <div className="font-mono font-bold text-sm tabular-nums">{userVotes}</div>
+                  <div className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider">
+                    → {currentCredits} cr
+                  </div>
                 </div>
 
                 <Button
-                  size="icon"
+                  size="icon-sm"
                   variant="outline"
                   onClick={handleAddVote}
                   disabled={!canAddVote || !showAddControl}
                   title={isApproval && userVotes > 0 ? 'Already approved' : undefined}
+                  className="rounded-md"
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
                 </Button>
               </div>
             )}

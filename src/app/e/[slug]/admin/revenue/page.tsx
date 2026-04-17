@@ -16,7 +16,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { AdminNav } from '@/components/admin/AdminNav'
+
 import { useAuth } from '@/hooks/useAuth'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
 import { formatPrice } from '@/lib/payments/stripe'
@@ -189,50 +189,35 @@ export default function RevenueDashboardPage() {
 
   if (!canViewRevenue) {
     return (
-      <>
-        <AdminNav eventSlug={event.slug} canManageSchedule={false} canManageVenues={false} />
-        <div className="container mx-auto px-4 py-8">
-          <Card>
-            <CardContent className="py-12 text-center">
-              <DollarSign className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
-              <p className="text-muted-foreground">
-                Only event owners and admins can view revenue data.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </>
+      <Card>
+        <CardContent className="py-12 text-center">
+          <DollarSign className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
+          <p className="text-muted-foreground">
+            Only event owners and admins can view revenue data.
+          </p>
+        </CardContent>
+      </Card>
     )
   }
 
   if (loading) {
     return (
-      <>
-        <AdminNav eventSlug={event.slug} canManageSchedule={false} canManageVenues={false} />
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        </div>
-      </>
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
     )
   }
 
   if (error || !stats) {
     return (
-      <>
-        <AdminNav eventSlug={event.slug} canManageSchedule={false} canManageVenues={false} />
-        <div className="container mx-auto px-4 py-8">
-          <Card>
-            <CardContent className="py-12 text-center">
-              <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h2 className="text-xl font-semibold mb-2">Error Loading Data</h2>
-              <p className="text-muted-foreground">{error || 'Failed to load revenue data'}</p>
-            </CardContent>
-          </Card>
-        </div>
-      </>
+      <Card>
+        <CardContent className="py-12 text-center">
+          <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+          <h2 className="text-xl font-semibold mb-2">Error Loading Data</h2>
+          <p className="text-muted-foreground">{error || 'Failed to load revenue data'}</p>
+        </CardContent>
+      </Card>
     )
   }
 
@@ -248,13 +233,10 @@ export default function RevenueDashboardPage() {
     : thisWeekRevenue > 0 ? 100 : 0
 
   return (
-    <>
-      <AdminNav eventSlug={event.slug} canManageSchedule={isAdmin} canManageVenues={isAdmin} />
-
-      <div className="container mx-auto px-4 py-8 space-y-8">
+      <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Revenue Dashboard</h1>
+            <h1 className="text-2xl font-display font-bold">Revenue Dashboard</h1>
             <p className="text-muted-foreground">Track ticket sales and revenue</p>
           </div>
           <Button variant="outline" disabled>
@@ -419,6 +401,5 @@ export default function RevenueDashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </>
   )
 }

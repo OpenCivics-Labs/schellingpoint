@@ -104,7 +104,7 @@ export function AdminNav({ eventSlug, canManageSchedule, canManageVenues }: Admi
   ].filter((item) => item.show)
 
   return (
-    <header className="border-b bg-background/95 backdrop-blur-sm sticky top-0 z-20">
+    <header className="border-b border-border bg-background sticky top-0 z-20 ruler-edge">
       <div className="container mx-auto px-4">
         {/* Title row */}
         <div className="flex items-center gap-3 h-12 border-b">

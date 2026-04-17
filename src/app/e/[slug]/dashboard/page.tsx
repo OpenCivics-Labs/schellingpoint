@@ -253,7 +253,7 @@ export default function DashboardPage() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-2xl font-display font-bold">
             {user
               ? `Welcome back, ${profile?.display_name || user.email?.split('@')[0] || 'friend'}`
               : 'Dashboard'}
@@ -263,57 +263,57 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid — System Gauges */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
+          <Card className="stats-card" accent="top" accentColor="hsl(var(--signal))">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Sessions</CardTitle>
-              <Presentation className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Total Sessions</CardTitle>
+              <Presentation className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalSessions || 0}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="text-3xl font-mono font-bold tabular-nums">{stats?.totalSessions || 0}</div>
+              <p className="text-xs font-mono text-muted-foreground mt-1">
                 {stats?.scheduledSessions || 0} scheduled
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="stats-card" accent="top" accentColor="hsl(var(--signal-amber))">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Votes</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Total Votes</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalVotes || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Across all sessions
+              <div className="text-3xl font-mono font-bold tabular-nums">{stats?.totalVotes || 0}</div>
+              <p className="text-xs font-mono text-muted-foreground mt-1">
+                across all sessions
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="stats-card" accent="top" accentColor="hsl(var(--signal-cyan))">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Participants</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Participants</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalParticipants || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                Registered attendees
+              <div className="text-3xl font-mono font-bold tabular-nums">{stats?.totalParticipants || 0}</div>
+              <p className="text-xs font-mono text-muted-foreground mt-1">
+                registered nodes
               </p>
             </CardContent>
           </Card>
 
           {user && (
-            <Card>
+            <Card className="stats-card" accent="top" accentColor="hsl(var(--signal))">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Your Credits</CardTitle>
-                <Vote className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Your Credits</CardTitle>
+                <Vote className="h-4 w-4 text-primary" strokeWidth={1.5} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{creditsRemaining}</div>
-                <p className="text-xs text-muted-foreground">
-                  {creditsSpent} of {voteCredits} spent
+                <div className="text-3xl font-mono font-bold tabular-nums text-primary">{creditsRemaining}</div>
+                <p className="text-xs font-mono text-muted-foreground mt-1">
+                  {creditsSpent} of {voteCredits} allocated
                 </p>
               </CardContent>
             </Card>
@@ -381,7 +381,7 @@ export default function DashboardPage() {
 
         {/* Your Voting Activity */}
         {user && isMember && (
-          <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+          <Card accent="left" accentColor="hsl(var(--signal))" className="stats-card">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold flex items-center gap-2">
@@ -394,30 +394,30 @@ export default function DashboardPage() {
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <p className="text-2xl sm:text-3xl font-bold text-primary">
+                  <p className="text-2xl sm:text-3xl font-mono font-bold tabular-nums text-primary">
                     {Object.keys(userVotes).length}
                   </p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Sessions voted</p>
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Sessions voted</p>
                 </div>
                 <div>
-                  <p className="text-2xl sm:text-3xl font-bold">{totalVotesCast}</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Votes cast</p>
+                  <p className="text-2xl sm:text-3xl font-mono font-bold tabular-nums">{totalVotesCast}</p>
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Votes cast</p>
                 </div>
                 <div>
-                  <p className="text-2xl sm:text-3xl font-bold">{creditsSpent}</p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Credits used</p>
+                  <p className="text-2xl sm:text-3xl font-mono font-bold tabular-nums">{creditsSpent}</p>
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Credits used</p>
                 </div>
                 <div>
-                  <p className="text-2xl sm:text-3xl font-bold text-primary">
+                  <p className="text-2xl sm:text-3xl font-mono font-bold tabular-nums text-primary">
                     {Math.max(creditsRemaining, 0)}
                   </p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">Credits remaining</p>
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Credits remaining</p>
                 </div>
               </div>
               <div className="mt-4">
-                <div className="flex justify-between text-xs sm:text-sm mb-1">
-                  <span className="text-muted-foreground">Credit usage</span>
-                  <span className="font-medium">
+                <div className="flex justify-between text-xs font-mono mb-1">
+                  <span className="text-muted-foreground uppercase tracking-wider">Credit usage</span>
+                  <span className="font-medium tabular-nums">
                     {creditsSpent}/{voteCredits}
                   </span>
                 </div>

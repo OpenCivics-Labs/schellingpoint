@@ -18,7 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { AdminNav } from '@/components/admin/AdminNav'
+
 import { useAuth } from '@/hooks/useAuth'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
 import { getAccessToken } from '@/lib/supabase/client'
@@ -200,7 +200,7 @@ export default function AdminMembersPage() {
 
   if (authLoading || roleLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
@@ -211,19 +211,11 @@ export default function AdminMembersPage() {
   const pendingInvitations = invitations.filter(i => !i.accepted_at)
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav
-        eventSlug={event.slug}
-        canManageSchedule={can('manageSchedule')}
-        canManageVenues={can('manageVenues')}
-      />
-
-      <main className="container mx-auto px-4 py-6">
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Members</h1>
+              <h1 className="text-2xl font-display font-bold">Members</h1>
               <p className="text-sm text-muted-foreground">
                 {members.length} members in {event.name}
               </p>
@@ -435,7 +427,5 @@ export default function AdminMembersPage() {
             </CardContent>
           </Card>
         </div>
-      </main>
-    </div>
   )
 }

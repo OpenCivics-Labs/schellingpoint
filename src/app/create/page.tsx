@@ -343,7 +343,7 @@ function CreateWizardContent() {
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Header */}
-      <header className="border-b bg-background sticky top-0 z-10">
+      <header className="border-b border-border bg-background sticky top-0 z-10 ruler-edge">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-14">
             <Link
@@ -365,7 +365,7 @@ function CreateWizardContent() {
         <div className="max-w-3xl mx-auto space-y-8">
           {/* Page Title */}
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold">Create Event</h1>
+            <h1 className="text-3xl font-display font-bold">Create Event</h1>
             <p className="text-muted-foreground">
               Set up your unconference, hackathon, or community event
             </p>

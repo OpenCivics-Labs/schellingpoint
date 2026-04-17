@@ -504,7 +504,7 @@ export default function EventSessionsPage() {
       <div className="space-y-6">
         {/* Title */}
         <div>
-          <h1 className="text-2xl font-bold">Sessions</h1>
+          <h1 className="text-2xl font-display font-bold">Sessions</h1>
           <p className="text-muted-foreground mt-1">
             Vote on sessions to help determine the schedule
           </p>

@@ -8,7 +8,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
 import { cn } from '@/lib/utils'
-import { AdminNav } from '@/components/admin/AdminNav'
 import { AdminStats } from '@/components/admin/AdminStats'
 import { SessionCard } from '@/components/admin/SessionCard'
 import { SessionTable, Session } from '@/components/admin/SessionTable'
@@ -663,19 +662,12 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav
-        eventSlug={event.slug}
-        canManageSchedule={can('manageSchedule')}
-        canManageVenues={can('manageVenues')}
-      />
-
-      <main className="container mx-auto px-4 py-6">
+    <>
         <div className="space-y-6">
           {/* Page Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">Sessions</h1>
+              <h1 className="text-2xl font-display font-bold">Sessions</h1>
               <p className="text-muted-foreground">Manage proposals and scheduled sessions</p>
             </div>
             <Button asChild>
@@ -910,8 +902,6 @@ export default function AdminPage() {
             </div>
           )}
         </div>
-      </main>
-
       {/* Batch Actions Toolbar */}
       <BatchActions
         selectedCount={selectedIds.size}
@@ -924,6 +914,6 @@ export default function AdminPage() {
         isLoading={isBatchLoading}
         allowedActions={getAllowedBatchActions()}
       />
-    </div>
+    </>
   )
 }

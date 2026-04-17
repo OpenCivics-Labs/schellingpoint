@@ -2,7 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* BDO Grotesk Font */
+/* ═══════════════════════════════════════════════════════════════
+   BDO Grotesk — Display font (human layer)
+   ═══════════════════════════════════════════════════════════════ */
+
 @font-face {
   font-family: 'BDO Grotesk';
   src: url('/fonts/BDOGrotesk-Regular.otf') format('opentype');
@@ -35,177 +38,421 @@
   font-display: swap;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Design Tokens — "Phosphor Palette" with Earth Tones
+
+   Dark = deep warm charcoal (radar screen before the sweep)
+   Light = warm parchment (engineer's drawing paper)
+   Signal = sage green (organic emergence, not neon hype)
+   ═══════════════════════════════════════════════════════════════ */
+
 @layer base {
   :root {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 8%;
-    --card-foreground: 210 40% 98%;
-    --primary: 82 85% 55%;
-    --primary-foreground: 222 47% 6%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-    --success: 142 76% 36%;
-    --success-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 82 85% 55%;
-    --radius: 0.75rem;
-    --neon-glow: 82 85% 55%;
+    /* Canvas — deep warm charcoal */
+    --background: 25 8% 9%;
+    --foreground: 35 20% 92%;
+
+    /* Surfaces — warmer, distinct from background */
+    --card: 28 7% 14%;
+    --card-foreground: 35 20% 92%;
+    --popover: 28 7% 14%;
+    --popover-foreground: 35 20% 92%;
+    --surface-1: 28 7% 14%;
+    --surface-2: 28 7% 18%;
+
+    /* Signal — sage/forest green (organic, warm) */
+    --primary: 152 56% 52%;
+    --primary-foreground: 30 6% 10%;
+
+    /* Amber signal — pending, warming, attention */
+    --signal-amber: 32 76% 52%;
+    --signal-amber-foreground: 30 6% 10%;
+
+    /* Teal signal — system/info state */
+    --signal-cyan: 166 45% 40%;
+    --signal-cyan-foreground: 35 20% 92%;
+
+    --secondary: 30 6% 18%;
+    --secondary-foreground: 35 20% 92%;
+
+    --muted: 30 6% 18%;
+    --muted-foreground: 30 8% 55%;
+
+    --accent: 30 6% 18%;
+    --accent-foreground: 35 20% 92%;
+
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 35 20% 92%;
+
+    --success: 152 56% 42%;
+    --success-foreground: 35 20% 92%;
+
+    --border: 28 7% 24%;
+    --input: 28 7% 20%;
+    --ring: 152 56% 52%;
+
+    /* Substrate — the coordinate grid layer */
+    --substrate: 28 7% 18%;
+    --substrate-dot: 30 10% 35%;
+
+    /* Signal glow token */
+    --signal: 152 56% 52%;
+
+    --radius: 0.5rem;
+  }
+
+  /* ─── Light theme — engineer's drawing paper ──────────────── */
+  .light {
+    --background: 38 30% 96%;
+    --foreground: 30 15% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 30 15% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 30 15% 12%;
+    --surface-1: 0 0% 100%;
+    --surface-2: 38 20% 94%;
+
+    --primary: 152 56% 38%;
+    --primary-foreground: 0 0% 100%;
+
+    --signal-amber: 32 76% 45%;
+    --signal-amber-foreground: 30 15% 12%;
+    --signal-cyan: 166 45% 35%;
+    --signal-cyan-foreground: 0 0% 100%;
+
+    --secondary: 38 15% 90%;
+    --secondary-foreground: 30 15% 12%;
+
+    --muted: 38 15% 90%;
+    --muted-foreground: 30 10% 45%;
+
+    --accent: 38 15% 90%;
+    --accent-foreground: 30 15% 12%;
+
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 152 56% 32%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 38 15% 85%;
+    --input: 38 15% 85%;
+    --ring: 152 56% 38%;
+
+    --substrate: 38 15% 90%;
+    --substrate-dot: 38 12% 78%;
+
+    --signal: 152 56% 38%;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   Base layer — structural resets
+   ═══════════════════════════════════════════════════════════════ */
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    /* Persistent dot-grid substrate across the entire app */
+    background-image: radial-gradient(
+      circle,
+      hsl(var(--substrate-dot) / 0.12) 1px,
+      transparent 1px
+    );
+    background-size: 24px 24px;
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    @apply bg-primary/30 text-foreground;
+  }
+
+  /* Headings = human layer (display font) */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'BDO Grotesk', system-ui, sans-serif;
+  }
+
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 }
 
-/* Custom scrollbar */
+/* ═══════════════════════════════════════════════════════════════
+   Layer 1: THE SUBSTRATE — Coordinate system
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* Dot grid — engineering paper coordinate system */
+  .dot-grid {
+    background-image: radial-gradient(
+      circle,
+      hsl(var(--substrate-dot)) 1px,
+      transparent 1px
+    );
+    background-size: 24px 24px;
+  }
+
+  /* Geodesic mesh — subtle triangulated pattern (Fuller-inspired) */
+  .geodesic-mesh {
+    background-image:
+      linear-gradient(30deg, hsl(var(--substrate-dot) / 0.06) 1px, transparent 1px),
+      linear-gradient(150deg, hsl(var(--substrate-dot) / 0.06) 1px, transparent 1px),
+      linear-gradient(270deg, hsl(var(--substrate-dot) / 0.04) 1px, transparent 1px);
+    background-size: 40px 69px;
+  }
+
+  /* Ruler edge — the measurement border at content boundaries */
+  .ruler-edge {
+    border-bottom: 1px solid hsl(var(--border));
+    background-image: repeating-linear-gradient(
+      90deg,
+      hsl(var(--substrate-dot) / 0.3) 0px,
+      hsl(var(--substrate-dot) / 0.3) 1px,
+      transparent 1px,
+      transparent 120px
+    );
+    background-size: 100% 1px;
+    background-position: bottom;
+    background-repeat: repeat-x;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Layer 2: THE NETWORK — Cards and containers
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* System card — flat diagram region, not floating material */
+  .system-card {
+    @apply bg-card border border-border;
+    transition: border-color 0.2s ease;
+  }
+
+  .system-card:hover {
+    border-color: hsl(var(--signal) / 0.3);
+  }
+
+  /* Accent border variants — colored edge coding like technical docs */
+  .accent-top {
+    border-top: 2px solid hsl(var(--signal));
+  }
+
+  .accent-left {
+    border-left: 3px solid hsl(var(--signal));
+  }
+
+  .accent-top-amber {
+    border-top: 2px solid hsl(var(--signal-amber));
+  }
+
+  .accent-left-amber {
+    border-left: 3px solid hsl(var(--signal-amber));
+  }
+
+  .accent-top-cyan {
+    border-top: 2px solid hsl(var(--signal-cyan));
+  }
+
+  /* Stats card — neon top edge line */
+  .stats-card {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stats-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(var(--signal) / 0.6),
+      transparent
+    );
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Layer 3: THE SIGNAL — Active states and feedback
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* Signal glow — tighter, warmer than neon-glow */
+  .signal-glow {
+    box-shadow:
+      0 0 12px hsl(var(--signal) / 0.25),
+      0 0 4px hsl(var(--signal) / 0.15);
+  }
+
+  .signal-glow-sm {
+    box-shadow: 0 0 8px hsl(var(--signal) / 0.2);
+  }
+
+  /* Node indicator — connection status dot */
+  .node-indicator {
+    @apply w-2 h-2 rounded-full;
+    background: hsl(var(--signal));
+    box-shadow: 0 0 6px hsl(var(--signal) / 0.5);
+  }
+
+  .node-indicator-idle {
+    @apply w-2 h-2 rounded-full;
+    border: 1.5px solid hsl(var(--muted-foreground));
+    background: transparent;
+  }
+
+  /* Signal ping — vote feedback ripple */
+  .signal-ping {
+    position: relative;
+  }
+
+  .signal-ping::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid hsl(var(--signal));
+    opacity: 0;
+    animation: ping-ripple 0.4s ease-out;
+  }
+
+  /* Card hover — signal activates on edge */
+  .card-hover {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card-hover:hover {
+    border-color: hsl(var(--signal) / 0.4);
+    box-shadow: inset 2px 0 0 hsl(var(--signal) / 0.5);
+  }
+
+  /* Interactive element transition */
+  .interactive {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  /* Bottom nav safe area */
+  .pb-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 5rem);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Protocol Typography — monospace system layer
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer components {
+  /* System text — the protocol voice */
+  .mono {
+    font-family: var(--font-mono), 'Space Mono', 'JetBrains Mono', monospace;
+  }
+
+  /* Section rule — like technical document headers */
+  .section-rule {
+    @apply flex items-center gap-3 text-xs uppercase tracking-widest text-muted-foreground;
+    font-family: var(--font-mono), monospace;
+  }
+
+  .section-rule::after {
+    content: '';
+    @apply flex-1 h-px bg-border;
+  }
+
+  /* Protocol box — ASCII-style info blocks */
+  .protocol-box {
+    @apply border rounded-md p-4;
+    font-family: var(--font-mono), monospace;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Animations — System Dynamics
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes ping-ripple {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes counter-tick {
+  0% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(-4px); opacity: 0.4; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes connection-line {
+  0% { width: 0; }
+  100% { width: 100%; }
+}
+
+@keyframes convergence-pulse {
+  0%, 100% { border-left-color: hsl(var(--signal) / 0.3); }
+  50% { border-left-color: hsl(var(--signal) / 0.7); }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Utility classes
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .page-transition {
+    @apply transition-all duration-200 ease-out;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Scrollbar — warm, minimal
+   ═══════════════════════════════════════════════════════════════ */
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
-  border-radius: 4px;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.3);
-  border-radius: 4px;
+  background: hsl(var(--muted-foreground) / 0.2);
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.5);
-}
-
-/* Neon glow effects */
-.neon-glow {
-  box-shadow: 0 0 20px hsl(var(--neon-glow) / 0.3);
-}
-
-.neon-glow-hover:hover {
-  box-shadow: 0 0 30px hsl(var(--neon-glow) / 0.5);
-}
-
-.neon-text {
-  text-shadow: 0 0 10px hsl(var(--neon-glow) / 0.5);
-}
-
-/* Card hover effect */
-.card-hover {
-  transition: all 0.2s ease;
-}
-
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px hsl(var(--neon-glow) / 0.1);
-  border-color: hsl(var(--neon-glow) / 0.3);
-}
-
-/* Gradient backgrounds */
-.gradient-dark {
-  background: linear-gradient(180deg, hsl(222 47% 6%) 0%, hsl(222 47% 4%) 100%);
-}
-
-.gradient-card {
-  background: linear-gradient(135deg, hsl(222 47% 10%) 0%, hsl(222 47% 8%) 100%);
-}
-
-/* Animated gradient for hero sections */
-@keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.animated-gradient {
-  background: linear-gradient(-45deg, hsl(222 47% 6%), hsl(222 47% 10%), hsl(82 85% 55% / 0.1), hsl(222 47% 6%));
-  background-size: 400% 400%;
-  animation: gradient-shift 15s ease infinite;
-}
-
-/* Stats card glow */
-.stats-card {
-  position: relative;
-  overflow: hidden;
-}
-
-.stats-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, hsl(var(--neon-glow) / 0.5), transparent);
-}
-
-/* Button primary glow */
-.btn-primary-glow {
-  box-shadow: 0 4px 14px hsl(var(--primary) / 0.4);
-}
-
-.btn-primary-glow:hover {
-  box-shadow: 0 6px 20px hsl(var(--primary) / 0.5);
-}
-
-/* Glass card effect */
-.glass-card {
-  background: hsl(var(--card) / 0.6);
-  border: 1px solid hsl(var(--border) / 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-/* Animated gradient blobs */
-@keyframes gradient-drift {
-  0% { transform: translate(0%, 0%); }
-  50% { transform: translate(-10%, 5%); }
-  100% { transform: translate(0%, 0%); }
-}
-
-@keyframes gradient-drift-reverse {
-  0% { transform: translate(0%, 0%); }
-  50% { transform: translate(10%, -5%); }
-  100% { transform: translate(0%, 0%); }
-}
-
-@keyframes gradient-drift-slow {
-  0% { transform: translate(0%, 0%); }
-  50% { transform: translate(-5%, 8%); }
-  100% { transform: translate(0%, 0%); }
-}
-
-.animate-gradient-drift {
-  animation: gradient-drift 15s ease-in-out infinite;
-}
-
-.animate-gradient-drift-reverse {
-  animation: gradient-drift-reverse 18s ease-in-out infinite;
-}
-
-.animate-gradient-drift-slow {
-  animation: gradient-drift-slow 25s ease-in-out infinite;
-}
-
-/* Font display class */
-.font-display {
-  font-family: 'BDO Grotesk', system-ui, sans-serif;
-}
-
-/* Hide scrollbar but allow scrolling */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
+  background: hsl(var(--muted-foreground) / 0.4);
 }

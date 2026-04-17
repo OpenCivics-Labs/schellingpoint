@@ -83,7 +83,7 @@ export function AdminStats({
   ]
 
   return (
-    <section className="rounded-xl border bg-card">
+    <section className="rounded-xl border bg-card stats-card">
       {/* Primary KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-border">
         {primary.map((stat) => (

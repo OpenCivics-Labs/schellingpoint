@@ -1,11 +1,30 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
-const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  interactive?: boolean
+  /** Colored accent edge — 'top' or 'left'. Pair with accentColor. */
+  accent?: 'top' | 'left'
+  accentColor?: string
+}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, interactive, accent, accentColor, style, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('rounded-xl border bg-card text-card-foreground shadow-sm', className)}
+      className={cn(
+        'rounded-lg border bg-card text-card-foreground',
+        interactive && 'cursor-pointer transition-all hover:border-primary/30',
+        accent === 'top' && 'border-t-2',
+        accent === 'left' && 'border-l-[3px]',
+        className
+      )}
+      style={{
+        ...(accent && accentColor ? {
+          [accent === 'top' ? 'borderTopColor' : 'borderLeftColor']: accentColor,
+        } : {}),
+        ...style,
+      }}
       {...props}
     />
   )

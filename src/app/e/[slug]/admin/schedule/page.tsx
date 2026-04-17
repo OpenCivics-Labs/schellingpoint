@@ -21,7 +21,7 @@ import {
   FileText,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { AdminNav } from '@/components/admin/AdminNav'
+
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -847,7 +847,7 @@ export default function AdminSchedulePage() {
 
   if (authLoading || roleLoading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
@@ -858,14 +858,8 @@ export default function AdminSchedulePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav
-        eventSlug={event.slug}
-        canManageSchedule={can('manageSchedule')}
-        canManageVenues={can('manageVenues')}
-      />
-
-      <div className="flex h-[calc(100vh-57px)]">
+    <>
+    <div className="flex h-[calc(100vh-57px)]">
         {/* Session Tray - Left Sidebar */}
         <div className={cn(
           "border-r bg-muted/30 flex flex-col transition-all duration-200",
@@ -1478,7 +1472,7 @@ export default function AdminSchedulePage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
 

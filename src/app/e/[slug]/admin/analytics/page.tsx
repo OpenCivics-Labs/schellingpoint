@@ -13,7 +13,7 @@ import {
   ThumbsUp,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AdminNav } from '@/components/admin/AdminNav'
+
 import { useAuth } from '@/hooks/useAuth'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
 import { cn } from '@/lib/utils'
@@ -256,7 +256,7 @@ export default function AdminAnalyticsPage() {
 
   if (authLoading || roleLoading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     )
@@ -267,18 +267,10 @@ export default function AdminAnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <AdminNav
-        eventSlug={event.slug}
-        canManageSchedule={can('manageSchedule')}
-        canManageVenues={can('manageVenues')}
-      />
-
-      <main className="container mx-auto px-4 py-6">
         <div className="space-y-6">
           {/* Header */}
           <div>
-            <h1 className="text-2xl font-bold">Analytics</h1>
+            <h1 className="text-2xl font-display font-bold">Analytics</h1>
             <p className="text-sm text-muted-foreground">
               Event insights and statistics
             </p>
@@ -536,8 +528,6 @@ export default function AdminAnalyticsPage() {
             </Card>
           </div>
         </div>
-      </main>
-    </div>
   )
 }
 
