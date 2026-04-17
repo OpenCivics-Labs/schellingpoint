@@ -1,14 +1,14 @@
 'use client'
 
-import { Card, CardContent } from '@/components/ui/card'
 import {
   FileText,
   CheckCircle2,
   Calendar,
   XCircle,
   MapPin,
-  Clock
+  Clock,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface AdminStatsProps {
   pending: number
@@ -19,94 +19,166 @@ interface AdminStatsProps {
   timeSlots: number
 }
 
+type Tone = 'neutral' | 'amber' | 'emerald' | 'primary' | 'muted'
+
+interface Stat {
+  label: string
+  value: number
+  icon: React.ReactNode
+  tone: Tone
+  hint?: string
+}
+
 export function AdminStats({
   pending,
   approved,
   scheduled,
   rejected,
   venues,
-  timeSlots
+  timeSlots,
 }: AdminStatsProps) {
-  const total = pending + approved + scheduled + rejected
+  // Primary KPIs — most operationally relevant
+  const primary: Stat[] = [
+    {
+      label: 'Pending review',
+      value: pending,
+      icon: <FileText className="h-4 w-4" />,
+      tone: pending > 0 ? 'amber' : 'muted',
+      hint: pending > 0 ? 'Needs review' : undefined,
+    },
+    {
+      label: 'Approved',
+      value: approved,
+      icon: <CheckCircle2 className="h-4 w-4" />,
+      tone: approved > 0 ? 'emerald' : 'muted',
+    },
+    {
+      label: 'Scheduled',
+      value: scheduled,
+      icon: <Calendar className="h-4 w-4" />,
+      tone: 'primary',
+    },
+    {
+      label: 'Rejected',
+      value: rejected,
+      icon: <XCircle className="h-4 w-4" />,
+      tone: 'muted',
+    },
+  ]
+
+  // Supporting stats — infrastructure metadata
+  const secondary: Stat[] = [
+    {
+      label: 'Venues',
+      value: venues,
+      icon: <MapPin className="h-4 w-4" />,
+      tone: 'neutral',
+    },
+    {
+      label: 'Time slots',
+      value: timeSlots,
+      icon: <Clock className="h-4 w-4" />,
+      tone: 'neutral',
+    },
+  ]
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-      <StatCard
-        label="Pending Review"
-        value={pending}
-        icon={<FileText className="h-4 w-4" />}
-        variant={pending > 0 ? 'warning' : 'default'}
-      />
-      <StatCard
-        label="Approved"
-        value={approved}
-        icon={<CheckCircle2 className="h-4 w-4" />}
-        variant={approved > 0 ? 'success' : 'default'}
-      />
-      <StatCard
-        label="Scheduled"
-        value={scheduled}
-        icon={<Calendar className="h-4 w-4" />}
-        variant="primary"
-      />
-      <StatCard
-        label="Rejected"
-        value={rejected}
-        icon={<XCircle className="h-4 w-4" />}
-        variant="muted"
-      />
-      <StatCard
-        label="Venues"
-        value={venues}
-        icon={<MapPin className="h-4 w-4" />}
-        variant="default"
-      />
-      <StatCard
-        label="Time Slots"
-        value={timeSlots}
-        icon={<Clock className="h-4 w-4" />}
-        variant="default"
-      />
-    </div>
+    <section className="rounded-xl border bg-card">
+      {/* Primary KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-border">
+        {primary.map((stat) => (
+          <StatCell key={stat.label} {...stat} />
+        ))}
+      </div>
+      {/* Secondary row with venues / slots */}
+      <div className="border-t grid grid-cols-2 divide-x divide-border">
+        {secondary.map((stat) => (
+          <StatCell key={stat.label} {...stat} compact />
+        ))}
+      </div>
+    </section>
   )
 }
 
-function StatCard({
+function StatCell({
   label,
   value,
   icon,
-  variant = 'default'
-}: {
-  label: string
-  value: number
-  icon: React.ReactNode
-  variant?: 'default' | 'warning' | 'success' | 'primary' | 'muted'
-}) {
-  const variantStyles = {
-    default: 'bg-muted/30',
-    warning: 'bg-amber-500/10 border-amber-500/20',
-    success: 'bg-green-500/10 border-green-500/20',
-    primary: 'bg-primary/10 border-primary/20',
-    muted: 'bg-muted/30 text-muted-foreground',
+  tone,
+  hint,
+  compact = false,
+}: Stat & { compact?: boolean }) {
+  const toneStyles: Record<Tone, { text: string; bg: string; dot: string }> = {
+    neutral: {
+      text: 'text-foreground',
+      bg: 'bg-muted/30',
+      dot: 'bg-muted-foreground/40',
+    },
+    amber: {
+      text: 'text-amber-600 dark:text-amber-400',
+      bg: 'bg-amber-500/5',
+      dot: 'bg-amber-500',
+    },
+    emerald: {
+      text: 'text-emerald-600 dark:text-emerald-400',
+      bg: 'bg-emerald-500/5',
+      dot: 'bg-emerald-500',
+    },
+    primary: {
+      text: 'text-primary',
+      bg: 'bg-primary/5',
+      dot: 'bg-primary',
+    },
+    muted: {
+      text: 'text-muted-foreground',
+      bg: 'bg-transparent',
+      dot: 'bg-muted-foreground/30',
+    },
   }
-
-  const iconStyles = {
-    default: 'text-muted-foreground',
-    warning: 'text-amber-600 dark:text-amber-400',
-    success: 'text-green-600 dark:text-green-400',
-    primary: 'text-primary',
-    muted: 'text-muted-foreground',
-  }
+  const styles = toneStyles[tone]
 
   return (
-    <Card className={`border ${variantStyles[variant]}`}>
-      <CardContent className="p-3 sm:p-4">
+    <div
+      className={cn(
+        'flex items-start gap-3 px-4 py-3 transition-colors',
+        compact ? 'md:py-2.5' : 'md:py-4'
+      )}
+    >
+      <span
+        className={cn(
+          'flex-shrink-0 flex h-8 w-8 items-center justify-center rounded-lg',
+          styles.bg,
+          styles.text
+        )}
+      >
+        {icon}
+      </span>
+      <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className={iconStyles[variant]}>{icon}</span>
-          <span className="text-2xl font-bold">{value}</span>
+          <span
+            className={cn(
+              'font-semibold tabular-nums',
+              compact ? 'text-xl' : 'text-2xl'
+            )}
+          >
+            {value}
+          </span>
+          {hint && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-600 dark:text-amber-400">
+              <span className={cn('h-1.5 w-1.5 rounded-full', styles.dot)} />
+              {hint}
+            </span>
+          )}
         </div>
-        <p className="text-xs text-muted-foreground mt-1">{label}</p>
-      </CardContent>
-    </Card>
+        <p
+          className={cn(
+            'text-xs text-muted-foreground truncate',
+            compact ? 'mt-0' : 'mt-0.5'
+          )}
+        >
+          {label}
+        </p>
+      </div>
+    </div>
   )
 }

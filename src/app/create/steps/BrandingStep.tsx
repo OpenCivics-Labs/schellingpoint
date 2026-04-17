@@ -19,36 +19,112 @@ interface BrandingStepProps {
 
 interface ThemePreset {
   name: string;
+  category: string;
   primary: string;
   secondary: string;
   accent: string;
+  mode?: 'dark' | 'light';
+  description: string;
 }
 
 // ============================================================================
 // Constants
 // ============================================================================
 
+// Refined theme palettes — each has a clear identity and restrained color
+// usage, no neon saturation. Organizers can still customize with the picker.
 const THEME_PRESETS: ThemePreset[] = [
-  // Modern & Clean
-  { name: 'Electric', primary: '#00D4FF', secondary: '#0099FF', accent: '#FF6B35' },
-  { name: 'Neon Mint', primary: '#00FF9F', secondary: '#00D68F', accent: '#FF2E63' },
-  { name: 'Cyber', primary: '#B2FF00', secondary: '#00FF87', accent: '#FF00E5' },
+  // === Earth & grounded ===
+  {
+    name: 'Terra',
+    category: 'Earth',
+    primary: '#B97F5A',
+    secondary: '#6B5744',
+    accent: '#D4A373',
+    mode: 'light',
+    description: 'Warm terracotta and oak — grounded, human',
+  },
+  {
+    name: 'Parchment',
+    category: 'Earth',
+    primary: '#7D6B55',
+    secondary: '#4A4238',
+    accent: '#C9A87C',
+    mode: 'light',
+    description: 'Aged paper and honey — quiet and considered',
+  },
+  {
+    name: 'Sage',
+    category: 'Earth',
+    primary: '#6B8E7F',
+    secondary: '#3E5349',
+    accent: '#C8B68B',
+    mode: 'light',
+    description: 'Moss and cream — botanical and calm',
+  },
 
-  // Bold & Warm
-  { name: 'Magma', primary: '#FF5E3A', secondary: '#FF2D55', accent: '#FFD60A' },
-  { name: 'Solar', primary: '#FFCC00', secondary: '#FF9500', accent: '#34C759' },
-  { name: 'Coral', primary: '#FF6B6B', secondary: '#FF8E8E', accent: '#4ECDC4' },
+  // === Dark & sophisticated ===
+  {
+    name: 'Midnight',
+    category: 'Dark',
+    primary: '#7C8BFF',
+    secondary: '#1A2238',
+    accent: '#F5C98F',
+    mode: 'dark',
+    description: 'Deep indigo with a warm highlight — editorial dark mode',
+  },
+  {
+    name: 'Noir',
+    category: 'Dark',
+    primary: '#D4AF37',
+    secondary: '#111827',
+    accent: '#6B7280',
+    mode: 'dark',
+    description: 'Graphite and gold — minimal, cinematic',
+  },
 
-  // Cool & Calm
-  { name: 'Arctic', primary: '#4FC3F7', secondary: '#81D4FA', accent: '#AB47BC' },
-  { name: 'Lavender', primary: '#9B7EDE', secondary: '#B794F4', accent: '#F687B3' },
-  { name: 'Slate', primary: '#64748B', secondary: '#94A3B8', accent: '#38BDF8' },
+  // === Cool & refined ===
+  {
+    name: 'Nordic',
+    category: 'Cool',
+    primary: '#5B7DB1',
+    secondary: '#2C3E50',
+    accent: '#A9BCD0',
+    mode: 'light',
+    description: 'Slate blue and fog — understated and precise',
+  },
+  {
+    name: 'Harbor',
+    category: 'Cool',
+    primary: '#1F6E8C',
+    secondary: '#0E4B5A',
+    accent: '#E8C547',
+    mode: 'light',
+    description: 'Deep teal with a brass accent',
+  },
 
-  // Nature-Inspired
-  { name: 'Aurora', primary: '#22D3EE', secondary: '#A78BFA', accent: '#34D399' },
-  { name: 'Forest', primary: '#10B981', secondary: '#059669', accent: '#F59E0B' },
-  { name: 'Ocean', primary: '#0EA5E9', secondary: '#06B6D4', accent: '#8B5CF6' },
+  // === Warm & muted ===
+  {
+    name: 'Rose',
+    category: 'Warm',
+    primary: '#B56576',
+    secondary: '#6D4C5A',
+    accent: '#EAAC8B',
+    mode: 'light',
+    description: 'Dusty rose and peach — muted and warm',
+  },
+  {
+    name: 'Dusk',
+    category: 'Warm',
+    primary: '#8E7CC3',
+    secondary: '#534678',
+    accent: '#F4A261',
+    mode: 'dark',
+    description: 'Amethyst and amber — reflective evening light',
+  },
 ];
+
+const THEME_CATEGORIES = ['Earth', 'Dark', 'Cool', 'Warm'] as const;
 
 const THEME_MODES: { value: ThemeMode; label: string; description: string }[] = [
   { value: 'light', label: 'Light', description: 'Always use light mode' },
@@ -378,6 +454,9 @@ export function BrandingStep({ state, dispatch }: BrandingStepProps) {
           primary: preset.primary,
           secondary: preset.secondary,
           accent: preset.accent,
+          // Honor each preset's intended mode (light/dark) if specified so
+          // e.g. the Midnight theme opens in dark by default.
+          ...(preset.mode ? { mode: preset.mode } : {}),
         },
       },
     });
@@ -488,72 +567,102 @@ export function BrandingStep({ state, dispatch }: BrandingStepProps) {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Presets */}
-          <div className="space-y-3">
+          <div className="space-y-5">
             <Label>Theme Presets</Label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {THEME_PRESETS.map((preset) => {
-                const isSelected = isPresetSelected(branding.theme, preset);
-                return (
-                  <button
-                    key={preset.name}
-                    type="button"
-                    onClick={() => handlePresetSelect(preset)}
-                    className={cn(
-                      'flex flex-col items-center p-3 rounded-lg border-2 transition-all',
-                      'hover:border-primary/50 hover:bg-accent/50',
-                      'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-                      isSelected ? 'border-primary bg-primary/5' : 'border-border'
-                    )}
-                  >
-                    <div className="flex gap-1 mb-2">
-                      <div
-                        className="w-6 h-6 rounded-full border"
-                        style={{ backgroundColor: preset.primary }}
-                        title="Primary"
-                      />
-                      <div
-                        className="w-6 h-6 rounded-full border"
-                        style={{ backgroundColor: preset.secondary }}
-                        title="Secondary"
-                      />
-                      <div
-                        className="w-6 h-6 rounded-full border"
-                        style={{ backgroundColor: preset.accent }}
-                        title="Accent"
-                      />
-                    </div>
-                    <span className="text-sm font-medium">{preset.name}</span>
-                  </button>
-                );
-              })}
-              {/* Custom option */}
-              <button
-                type="button"
-                onClick={() => {}} // Custom is implicit when colors don't match presets
-                className={cn(
-                  'flex flex-col items-center p-3 rounded-lg border-2 transition-all',
-                  'hover:border-primary/50 hover:bg-accent/50',
-                  'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-                  isCustomTheme ? 'border-primary bg-primary/5' : 'border-border'
-                )}
-              >
-                <div className="flex gap-1 mb-2">
-                  <div
-                    className="w-6 h-6 rounded-full border"
+
+            {THEME_CATEGORIES.map((category) => {
+              const presetsInCategory = THEME_PRESETS.filter(
+                (p) => p.category === category,
+              );
+              if (presetsInCategory.length === 0) return null;
+
+              return (
+                <div key={category} className="space-y-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {category}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {presetsInCategory.map((preset) => {
+                      const isSelected = isPresetSelected(branding.theme, preset);
+                      // Use preset.mode to pick a tasteful preview background
+                      const previewBg = preset.mode === 'dark' ? '#111827' : '#F7F3EC';
+                      const previewFg = preset.mode === 'dark' ? '#F7F3EC' : '#1A1A1A';
+                      return (
+                        <button
+                          key={preset.name}
+                          type="button"
+                          onClick={() => handlePresetSelect(preset)}
+                          className={cn(
+                            'group flex flex-col items-stretch rounded-xl border-2 overflow-hidden transition-all text-left',
+                            'hover:border-primary/50',
+                            'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+                            isSelected ? 'border-primary' : 'border-border',
+                          )}
+                        >
+                          {/* Preview swatch */}
+                          <div
+                            className="px-4 py-3 flex items-center justify-between"
+                            style={{ backgroundColor: previewBg, color: previewFg }}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className="h-5 w-5 rounded-full shadow-sm ring-1 ring-black/5"
+                                style={{ backgroundColor: preset.primary }}
+                              />
+                              <span
+                                className="h-5 w-5 rounded-full shadow-sm ring-1 ring-black/5 -ml-2"
+                                style={{ backgroundColor: preset.secondary }}
+                              />
+                              <span
+                                className="h-5 w-5 rounded-full shadow-sm ring-1 ring-black/5 -ml-2"
+                                style={{ backgroundColor: preset.accent }}
+                              />
+                            </div>
+                            <span
+                              className="text-[10px] uppercase tracking-wide opacity-70"
+                            >
+                              {preset.mode === 'dark' ? 'Dark' : 'Light'}
+                            </span>
+                          </div>
+                          <div className="px-4 py-3 bg-card">
+                            <p className="text-sm font-medium">{preset.name}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                              {preset.description}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Custom marker */}
+            {isCustomTheme && (
+              <div className="flex items-center gap-3 rounded-xl border-2 border-primary bg-primary/5 p-3">
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="h-5 w-5 rounded-full ring-1 ring-black/5"
                     style={{ backgroundColor: branding.theme.primary }}
                   />
-                  <div
-                    className="w-6 h-6 rounded-full border"
+                  <span
+                    className="h-5 w-5 rounded-full ring-1 ring-black/5 -ml-2"
                     style={{ backgroundColor: branding.theme.secondary }}
                   />
-                  <div
-                    className="w-6 h-6 rounded-full border"
+                  <span
+                    className="h-5 w-5 rounded-full ring-1 ring-black/5 -ml-2"
                     style={{ backgroundColor: branding.theme.accent }}
                   />
                 </div>
-                <span className="text-sm font-medium">Custom</span>
-              </button>
-            </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Custom palette</p>
+                  <p className="text-xs text-muted-foreground">
+                    You&apos;ve customized the colors below.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Custom Color Pickers */}

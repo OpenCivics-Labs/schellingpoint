@@ -134,10 +134,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     return getCachedVotes() !== null
   })
 
-  // Calculate credits spent from user votes
+  // Calculate credits spent from user votes using the event's voting mechanism
   const creditsSpent = React.useMemo(() => {
-    return Object.values(userVotes).reduce((sum, votes) => sum + votesToCredits(votes), 0)
-  }, [userVotes])
+    return Object.values(userVotes).reduce(
+      (sum, votes) => sum + votesToCredits(votes, event.votingMechanism),
+      0
+    )
+  }, [userVotes, event.votingMechanism])
 
   // Fetch user's votes when user changes, with caching
   React.useEffect(() => {

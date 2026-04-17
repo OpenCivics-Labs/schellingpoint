@@ -37,20 +37,9 @@ interface OnboardingModalProps {
   suggestedTopics?: string[]
 }
 
-const DEFAULT_INTERESTS = [
-  'Governance',
-  'DeFi',
-  'DAOs',
-  'NFTs',
-  'Layer 2',
-  'Privacy',
-  'Security',
-  'UX/UI',
-  'Public Goods',
-  'ReFi',
-  'AI/ML',
-  'Developer Tools',
-]
+// Empty fallback — topics are organizer-defined per event. When not set,
+// users can still add their own custom interests below.
+const DEFAULT_INTERESTS: string[] = []
 
 function getAccessToken(): string | null {
   const storageKey = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`

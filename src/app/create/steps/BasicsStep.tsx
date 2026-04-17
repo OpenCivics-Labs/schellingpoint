@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import type { WizardState, WizardAction, EventType, EventVisibility } from '../useWizardState';
+import type { WizardState, WizardAction, EventVisibility } from '../useWizardState';
 
 // ============================================================================
 // Types
@@ -21,7 +21,7 @@ interface BasicsStepProps {
 // Constants
 // ============================================================================
 
-const EVENT_TYPES: { value: EventType; label: string; description: string }[] = [
+const EVENT_TYPES: { value: string; label: string; description: string }[] = [
   {
     value: 'unconference',
     label: 'Unconference',
@@ -43,6 +43,8 @@ const EVENT_TYPES: { value: EventType; label: string; description: string }[] = 
     description: 'Casual community gathering',
   },
 ];
+
+const PRESET_EVENT_TYPE_VALUES = new Set(EVENT_TYPES.map((t) => t.value));
 
 const VISIBILITY_OPTIONS: { value: EventVisibility; label: string; description: string }[] = [
   {
@@ -131,13 +133,27 @@ export function BasicsStep({ state, dispatch }: BasicsStepProps) {
   };
 
   // Handler for event type selection
-  const handleEventTypeChange = (eventType: EventType) => {
+  const handleEventTypeChange = (eventType: string) => {
     dispatch({ type: 'UPDATE_BASICS', payload: { eventType } });
   };
 
   // Handler for visibility selection
   const handleVisibilityChange = (visibility: EventVisibility) => {
     dispatch({ type: 'UPDATE_BASICS', payload: { visibility } });
+  };
+
+  // Tracks whether user is entering a custom event type
+  const isCustomEventType =
+    !!basics.eventType && !PRESET_EVENT_TYPE_VALUES.has(basics.eventType);
+  const [customMode, setCustomMode] = React.useState(isCustomEventType);
+  const [customValue, setCustomValue] = React.useState(isCustomEventType ? basics.eventType : '');
+
+  const handleCustomEventTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setCustomValue(value);
+    if (value.trim()) {
+      dispatch({ type: 'UPDATE_BASICS', payload: { eventType: value.trim() } });
+    }
   };
 
   return (
@@ -243,18 +259,21 @@ export function BasicsStep({ state, dispatch }: BasicsStepProps) {
             What kind of event are you organizing?
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {EVENT_TYPES.map((type) => (
               <button
                 key={type.value}
                 type="button"
-                onClick={() => handleEventTypeChange(type.value)}
+                onClick={() => {
+                  handleEventTypeChange(type.value);
+                  setCustomMode(false);
+                }}
                 className={cn(
                   'flex flex-col items-start p-4 rounded-lg border-2 text-left transition-all',
                   'hover:border-primary/50 hover:bg-accent/50',
                   'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-                  basics.eventType === type.value
+                  !customMode && basics.eventType === type.value
                     ? 'border-primary bg-primary/5'
                     : 'border-border'
                 )}
@@ -265,7 +284,51 @@ export function BasicsStep({ state, dispatch }: BasicsStepProps) {
                 </span>
               </button>
             ))}
+
+            {/* Other / custom event type */}
+            <button
+              type="button"
+              onClick={() => {
+                setCustomMode(true);
+                if (customValue.trim()) {
+                  dispatch({
+                    type: 'UPDATE_BASICS',
+                    payload: { eventType: customValue.trim() },
+                  });
+                } else {
+                  // Placeholder until user types something
+                  dispatch({ type: 'UPDATE_BASICS', payload: { eventType: '' } });
+                }
+              }}
+              className={cn(
+                'flex flex-col items-start p-4 rounded-lg border-2 text-left transition-all',
+                'hover:border-primary/50 hover:bg-accent/50',
+                'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+                customMode ? 'border-primary bg-primary/5' : 'border-border'
+              )}
+            >
+              <span className="font-medium">Other</span>
+              <span className="text-sm text-muted-foreground">
+                Define your own event type
+              </span>
+            </button>
           </div>
+
+          {customMode && (
+            <div className="space-y-2">
+              <Label htmlFor="custom-event-type">Custom event type</Label>
+              <Input
+                id="custom-event-type"
+                placeholder="e.g., Retreat, Summit, Festival"
+                value={customValue}
+                onChange={handleCustomEventTypeChange}
+                maxLength={50}
+              />
+              <p className="text-xs text-muted-foreground">
+                This label will be saved with your event and shown in the review.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

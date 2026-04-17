@@ -142,15 +142,38 @@ export default function ProposePage() {
     return getEventDays(event.startDate, event.endDate)
   }, [event.startDate, event.endDate])
 
-  // Filter formats/durations based on event settings
+  // Humanize a custom format slug ("fireside-chat" -> "Fireside chat")
+  const humanizeFormatValue = (value: string) => {
+    const label = value
+      .split('-')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ')
+    return label
+  }
+
+  // Filter formats/durations based on event settings, including any custom ones
   const allowedFormats = React.useMemo(() => {
     if (event.allowedFormats.length === 0) return formats
-    return formats.filter(f => event.allowedFormats.includes(f.value))
+    // Start from preset formats that are enabled for the event
+    const preset = formats.filter(f => event.allowedFormats.includes(f.value))
+    // Add any event-defined formats not in the preset list
+    const custom = event.allowedFormats
+      .filter(v => !formats.some(f => f.value === v))
+      .map(v => ({
+        value: v,
+        label: humanizeFormatValue(v),
+        description: 'Custom format',
+      }))
+    return [...preset, ...custom]
   }, [event.allowedFormats])
 
   const allowedDurations = React.useMemo(() => {
     if (event.allowedDurations.length === 0) return durations
-    return durations.filter(d => event.allowedDurations.includes(d.value))
+    const preset = durations.filter(d => event.allowedDurations.includes(d.value))
+    const custom = event.allowedDurations
+      .filter(v => !durations.some(d => d.value === v))
+      .map(v => ({ value: v, label: `${v} min` }))
+    return [...preset, ...custom].sort((a, b) => a.value - b.value)
   }, [event.allowedDurations])
 
   // Use event's suggested topics if available, with lowercase for tag matching
@@ -193,6 +216,19 @@ export default function ProposePage() {
       router.push('/login')
     }
   }, [user, authLoading, router])
+
+  // Ensure format/duration defaults match what the event allows
+  React.useEffect(() => {
+    if (allowedFormats.length > 0 && !allowedFormats.some(f => f.value === format)) {
+      setFormat(allowedFormats[0].value)
+    }
+  }, [allowedFormats, format])
+
+  React.useEffect(() => {
+    if (allowedDurations.length > 0 && !allowedDurations.some(d => d.value === duration)) {
+      setDuration(allowedDurations[0].value)
+    }
+  }, [allowedDurations, duration])
 
   const handleAddTag = (tag: string) => {
     const normalizedTag = tag.toLowerCase().trim()

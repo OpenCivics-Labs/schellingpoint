@@ -112,10 +112,13 @@ export default function EventSessionsPage() {
   // Stable sort positions — captures server order on load, prevents jumps during voting
   const stableVoteOrderRef = React.useRef<Record<string, number>>({})
 
-  // Calculate credits spent
+  // Calculate credits spent using the event's voting mechanism
   const creditsSpent = React.useMemo(() => {
-    return Object.values(userVotes).reduce((sum, votes) => sum + votesToCredits(votes), 0)
-  }, [userVotes])
+    return Object.values(userVotes).reduce(
+      (sum, votes) => sum + votesToCredits(votes, event.votingMechanism),
+      0
+    )
+  }, [userVotes, event.votingMechanism])
 
   const creditsRemaining = totalCredits - creditsSpent
 
@@ -260,8 +263,8 @@ export default function EventSessionsPage() {
     }
 
     const oldVotes = userVotes[sessionId] || 0
-    const oldCredits = votesToCredits(oldVotes)
-    const newCredits = votesToCredits(newVoteCount)
+    const oldCredits = votesToCredits(oldVotes, event.votingMechanism)
+    const newCredits = votesToCredits(newVoteCount, event.votingMechanism)
     const creditDiff = newCredits - oldCredits
     const voteDiff = newVoteCount - oldVotes
 
@@ -704,6 +707,7 @@ export default function EventSessionsPage() {
               onToggleFavorite={handleToggleFavorite}
               showVoting={true}
               isLoggedIn={!!user}
+              votingMechanism={event.votingMechanism}
             />
           ))}
         </div>

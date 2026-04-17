@@ -11,7 +11,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 
 import { useWizardStateWithPersistence } from './useWizardPersistence';
-import { WizardNavigation } from './WizardNavigation';
+import {
+  WizardStepTabs,
+  WizardNavButtons,
+  WizardValidationErrors,
+} from './WizardNavigation';
 import { WIZARD_STEPS, getStepFromNumber, type WizardState, type WizardAction } from './useWizardState';
 
 // ============================================================================
@@ -180,6 +184,14 @@ function CreateWizardContent() {
   const handlePrev = React.useCallback(() => {
     // No additional logic needed
   }, []);
+
+  // Scroll to top whenever the step changes so the new step loads at the top
+  // of the viewport (fixes the review page opening scrolled to the bottom).
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+  }, [state.currentStep]);
 
   // Handler for event submission
   const handleSubmit = React.useCallback(async () => {
@@ -360,7 +372,7 @@ function CreateWizardContent() {
           </div>
 
           {/* Wizard Content */}
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Error Alert */}
             {submitError && (
               <Alert variant="destructive">
@@ -398,22 +410,44 @@ function CreateWizardContent() {
               </Alert>
             )}
 
-            {/* Step Content */}
-            <div className="min-h-[400px]">
-              {renderStep()}
-            </div>
-
-            {/* Navigation */}
+            {/* Top Navigation: step tabs + back/next (hidden on review) */}
             <Card>
-              <CardContent className="py-6">
-                <WizardNavigation
+              <CardContent className="py-4 space-y-4">
+                <WizardStepTabs
                   state={state}
                   dispatch={dispatch}
                   onNext={handleNext}
                   onPrev={handlePrev}
                 />
+                <WizardValidationErrors state={state} />
+                <WizardNavButtons
+                  state={state}
+                  dispatch={dispatch}
+                  onNext={handleNext}
+                  onPrev={handlePrev}
+                  hideOnLastStep
+                />
               </CardContent>
             </Card>
+
+            {/* Step Content */}
+            <div className="min-h-[400px]">
+              {renderStep()}
+            </div>
+
+            {/* Bottom Navigation: only on last step (review) for easy access */}
+            {state.currentStep === WIZARD_STEPS.length - 1 && (
+              <Card>
+                <CardContent className="py-4">
+                  <WizardNavButtons
+                    state={state}
+                    dispatch={dispatch}
+                    onNext={handleNext}
+                    onPrev={handlePrev}
+                  />
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </main>

@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { RSVPIndicator } from '@/components/RSVPButton'
-import { cn, votesToCredits, nextVoteCost } from '@/lib/utils'
+import { cn, votesToCredits, nextVoteCost, type VotingMechanism } from '@/lib/utils'
 
 const formatIcons: Record<string, React.ReactNode> = {
   talk: <Mic className="h-4 w-4" />,
@@ -59,6 +59,8 @@ interface SessionCardProps {
   isLoggedIn?: boolean
   /** User's RSVP status for this session */
   userRsvpStatus?: 'confirmed' | 'waitlist' | null
+  /** Event voting mechanism (defaults to quadratic for back-compat) */
+  votingMechanism?: VotingMechanism
 }
 
 export function SessionCard({
@@ -72,10 +74,15 @@ export function SessionCard({
   showVoting = true,
   isLoggedIn = false,
   userRsvpStatus,
+  votingMechanism = 'quadratic',
 }: SessionCardProps) {
-  const currentCredits = votesToCredits(userVotes)
-  const costToAdd = nextVoteCost(userVotes)
+  const currentCredits = votesToCredits(userVotes, votingMechanism)
+  const costToAdd = nextVoteCost(userVotes, votingMechanism)
   const canAddVote = remainingCredits >= costToAdd
+  // Approval voting is binary per-session: a user either approves a session
+  // (1 credit) or does not. Hide the increment control past a single vote.
+  const isApproval = votingMechanism === 'approval'
+  const showAddControl = !isApproval || userVotes === 0
 
   const handleAddVote = () => {
     if (canAddVote && onVote) {
@@ -240,7 +247,8 @@ export function SessionCard({
                   size="icon"
                   variant="outline"
                   onClick={handleAddVote}
-                  disabled={!canAddVote}
+                  disabled={!canAddVote || !showAddControl}
+                  title={isApproval && userVotes > 0 ? 'Already approved' : undefined}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>

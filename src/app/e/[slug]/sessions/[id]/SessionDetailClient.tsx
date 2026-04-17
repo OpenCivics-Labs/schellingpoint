@@ -39,7 +39,7 @@ import { AddToCalendar } from '@/components/AddToCalendar'
 import { RSVPButton } from '@/components/RSVPButton'
 import { useAuth } from '@/hooks/useAuth'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
-import { votesToCredits } from '@/lib/utils'
+import { votesToCredits, nextVoteCost } from '@/lib/utils'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -117,10 +117,13 @@ export function SessionDetailClient({ sessionId, initialSession }: SessionDetail
     }
   }, [showHostCard])
 
-  // Calculate credits spent
+  // Calculate credits spent using the event's voting mechanism
   const creditsSpent = React.useMemo(() => {
-    return Object.values(allUserVotes).reduce((sum, votes) => sum + votesToCredits(votes), 0)
-  }, [allUserVotes])
+    return Object.values(allUserVotes).reduce(
+      (sum, votes) => sum + votesToCredits(votes, event.votingMechanism),
+      0
+    )
+  }, [allUserVotes, event.votingMechanism])
 
   const creditsRemaining = totalCredits - creditsSpent
 
@@ -247,8 +250,8 @@ export function SessionDetailClient({ sessionId, initialSession }: SessionDetail
     }
 
     const newVoteCount = Math.max(0, userVotes + delta)
-    const oldCredits = votesToCredits(userVotes)
-    const newCredits = votesToCredits(newVoteCount)
+    const oldCredits = votesToCredits(userVotes, event.votingMechanism)
+    const newCredits = votesToCredits(newVoteCount, event.votingMechanism)
     const creditDiff = newCredits - oldCredits
 
     // Check if user has enough credits
@@ -466,8 +469,10 @@ export function SessionDetailClient({ sessionId, initialSession }: SessionDetail
   }
 
   const FormatIcon = formatIcons[session.format] || Mic
-  const nextVoteCost = 2 * userVotes + 1
-  const canAddVote = creditsRemaining >= nextVoteCost
+  const isApproval = event.votingMechanism === 'approval'
+  const costToAddVote = nextVoteCost(userVotes, event.votingMechanism)
+  const canAddVote =
+    creditsRemaining >= costToAddVote && !(isApproval && userVotes > 0)
 
   return (
     <DashboardLayout>
@@ -894,7 +899,7 @@ export function SessionDetailClient({ sessionId, initialSession }: SessionDetail
                       <div className="min-w-[60px] text-center">
                         <div className="text-2xl font-bold">{userVotes}</div>
                         <div className="text-xs text-muted-foreground">
-                          {votesToCredits(userVotes)} credits
+                          {votesToCredits(userVotes, event.votingMechanism)} credits
                         </div>
                       </div>
                       <Button
@@ -908,7 +913,9 @@ export function SessionDetailClient({ sessionId, initialSession }: SessionDetail
                     </div>
                     {!canAddVote && userVotes > 0 && (
                       <p className="text-xs text-muted-foreground text-center mt-2">
-                        Next vote costs {nextVoteCost} credits
+                        {isApproval
+                          ? 'Already approved this session'
+                          : `Next vote costs ${costToAddVote} credits`}
                       </p>
                     )}
                     <p className="text-xs text-muted-foreground text-center mt-3 pt-3 border-t">

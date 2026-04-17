@@ -292,7 +292,18 @@ export function ReviewStep({ state, dispatch, onSubmit, isSubmitting }: ReviewSt
             }
             mono
           />
-          <DataRow label="Type" value={EVENT_TYPE_LABELS[basics.eventType] || basics.eventType} />
+          <DataRow
+            label="Type"
+            value={
+              EVENT_TYPE_LABELS[basics.eventType] ||
+              (basics.eventType
+                ? basics.eventType
+                    .split(/[-\s]+/)
+                    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                    .join(' ')
+                : 'Not set')
+            }
+          />
           <DataRow label="Visibility" value={VISIBILITY_LABELS[basics.visibility] || basics.visibility} />
         </div>
       </Section>
@@ -447,7 +458,14 @@ export function ReviewStep({ state, dispatch, onSubmit, isSubmitting }: ReviewSt
           <div className="space-y-1">
             <DataRow label="Mechanism" value={VOTING_MECHANISM_LABELS[voting.mechanism] || voting.mechanism} />
             <DataRow label="Credits per User" value={voting.credits} />
-            <DataRow label="Max Proposals" value={`${voting.maxProposalsPerUser} per user`} />
+            <DataRow
+              label="Max Proposals"
+              value={
+                voting.maxProposalsPerUser === 0
+                  ? 'Unlimited'
+                  : `${voting.maxProposalsPerUser} per user`
+              }
+            />
             <DataRow
               label="Require Approval"
               value={voting.requireProposalApproval ? 'Yes' : 'No'}
@@ -476,14 +494,22 @@ export function ReviewStep({ state, dispatch, onSubmit, isSubmitting }: ReviewSt
           <div className="pt-2 border-t">
             <p className="text-sm font-medium text-muted-foreground mb-2">Allowed Formats</p>
             <div className="flex flex-wrap gap-1">
-              {Array.isArray(voting.allowedFormats) && voting.allowedFormats.map((format) => (
-                <span
-                  key={format}
-                  className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted"
-                >
-                  {FORMAT_LABELS[format] || format}
-                </span>
-              ))}
+              {Array.isArray(voting.allowedFormats) && voting.allowedFormats.map((format) => {
+                const label =
+                  FORMAT_LABELS[format] ||
+                  format
+                    .split('-')
+                    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                    .join(' ');
+                return (
+                  <span
+                    key={format}
+                    className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-muted"
+                  >
+                    {label}
+                  </span>
+                );
+              })}
             </div>
           </div>
 

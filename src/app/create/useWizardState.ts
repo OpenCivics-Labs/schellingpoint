@@ -7,7 +7,8 @@ import type { EventVisibility } from '@/types/event';
 // Types
 // ============================================================================
 
-export type EventType = 'unconference' | 'hackathon' | 'conference' | 'meetup';
+// Predefined event types. Organizers may also enter a custom string.
+export type EventType = 'unconference' | 'hackathon' | 'conference' | 'meetup' | string;
 export type LocationType = 'in-person' | 'virtual' | 'hybrid';
 export type VotingMechanism = 'quadratic' | 'linear' | 'approval';
 export type ThemeMode = 'dark' | 'light' | 'system';
@@ -100,6 +101,9 @@ export interface WizardState {
   venues: WizardVenue[];
   schedule: WizardSchedule;
   tracks: WizardTrack[];
+  // Suggested interest topics presented to attendees on profile setup and
+  // session proposals. Organizer-defined so each event can shape its own taxonomy.
+  suggestedTopics: string[];
   voting: WizardVoting;
   branding: WizardBranding;
   validation: Record<string, string[]>; // step -> error messages
@@ -121,6 +125,7 @@ export type WizardAction =
   | { type: 'ADD_TRACK'; payload: WizardTrack }
   | { type: 'UPDATE_TRACK'; payload: { id: string; updates: Partial<WizardTrack> } }
   | { type: 'REMOVE_TRACK'; payload: string }
+  | { type: 'SET_SUGGESTED_TOPICS'; payload: string[] }
   | { type: 'ADD_TIME_SLOT'; payload: WizardTimeSlot }
   | { type: 'UPDATE_TIME_SLOT'; payload: { id: string; updates: Partial<WizardTimeSlot> } }
   | { type: 'REMOVE_TIME_SLOT'; payload: string }
@@ -171,6 +176,9 @@ export const INITIAL_STATE: WizardState = {
     timeSlots: [],
   },
   tracks: [],
+  // Empty by default so organizers consciously opt into topics for their event.
+  // The create API falls back to no topics when this is empty, deferring any defaults.
+  suggestedTopics: [],
   voting: {
     credits: 100,
     mechanism: 'quadratic',
@@ -266,7 +274,8 @@ export function isStepValid(state: WizardState, step: number): boolean {
     case 'voting':
       return (
         state.voting.credits > 0 &&
-        state.voting.maxProposalsPerUser > 0 &&
+        // maxProposalsPerUser = 0 means unlimited (allowed)
+        state.voting.maxProposalsPerUser >= 0 &&
         Array.isArray(state.voting.allowedFormats) &&
         state.voting.allowedFormats.length > 0 &&
         Array.isArray(state.voting.allowedDurations) &&
@@ -329,8 +338,8 @@ export function getStepValidationErrors(state: WizardState, step: number): strin
       if (state.voting.credits <= 0) {
         errors.push('Vote credits must be greater than 0');
       }
-      if (state.voting.maxProposalsPerUser <= 0) {
-        errors.push('Max proposals per user must be greater than 0');
+      if (state.voting.maxProposalsPerUser < 0) {
+        errors.push('Max proposals per user cannot be negative');
       }
       if (!Array.isArray(state.voting.allowedFormats) || state.voting.allowedFormats.length === 0) {
         errors.push('At least one session format must be allowed');
@@ -460,6 +469,12 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
         tracks: state.tracks.filter((track) => track.id !== action.payload),
       };
 
+    case 'SET_SUGGESTED_TOPICS':
+      return {
+        ...state,
+        suggestedTopics: action.payload,
+      };
+
     case 'ADD_TIME_SLOT':
       return {
         ...state,
@@ -572,6 +587,7 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
           ...INITIAL_STATE.schedule,
           ...action.payload.schedule,
         },
+        suggestedTopics: action.payload.suggestedTopics || INITIAL_STATE.suggestedTopics,
         voting: {
           ...INITIAL_STATE.voting,
           ...action.payload.voting,
@@ -611,6 +627,7 @@ export function useWizardState(initialState?: Partial<WizardState>) {
           basics: { ...INITIAL_STATE.basics, ...initialState.basics },
           dates: { ...INITIAL_STATE.dates, ...initialState.dates },
           schedule: { ...INITIAL_STATE.schedule, ...initialState.schedule },
+          suggestedTopics: initialState.suggestedTopics || INITIAL_STATE.suggestedTopics,
           voting: { ...INITIAL_STATE.voting, ...initialState.voting },
           branding: {
             ...INITIAL_STATE.branding,

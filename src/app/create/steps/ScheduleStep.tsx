@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Plus, Pencil, Trash2, Clock, Calendar, MapPin, X, Zap, Coffee } from 'lucide-react';
+import { Plus, Pencil, Trash2, Clock, Calendar, MapPin, X, Zap, Coffee, LayoutGrid, List } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { WizardState, WizardAction, WizardTimeSlot, WizardVenue } from '../useWizardState';
+import { ScheduleCalendar } from '../components/ScheduleCalendar';
 
 // ============================================================================
 // Types
@@ -795,6 +796,8 @@ export function ScheduleStep({ state, dispatch }: ScheduleStepProps) {
   const [showForm, setShowForm] = React.useState(false);
   const [showBulkGenerator, setShowBulkGenerator] = React.useState(false);
   const [editingSlot, setEditingSlot] = React.useState<WizardTimeSlot | null>(null);
+  const [viewMode, setViewMode] = React.useState<'list' | 'calendar'>('calendar');
+  const [calendarVenue, setCalendarVenue] = React.useState<string | 'all'>('all');
 
   // Get event dates array
   const eventDates = React.useMemo(() => {
@@ -888,14 +891,71 @@ export function ScheduleStep({ state, dispatch }: ScheduleStepProps) {
 
   const getVenueById = (id: string) => venues.find((v) => v.id === id);
 
+  // Calendar create handler — emits one slot per venueId
+  const handleCalendarCreate = (
+    venueIds: string[],
+    dayDate: string,
+    startTime: string,
+    endTime: string,
+  ) => {
+    for (const vid of venueIds) {
+      dispatch({
+        type: 'ADD_TIME_SLOT',
+        payload: {
+          id: generateId(),
+          venueId: vid,
+          dayDate,
+          startTime,
+          endTime,
+          label: '',
+          isBreak: false,
+        },
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Schedule</CardTitle>
-          <CardDescription>
-            Define time slots for sessions. Each slot represents a window where a session can be scheduled.
-          </CardDescription>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle>Schedule</CardTitle>
+              <CardDescription>
+                Define time slots for sessions. Each slot represents a window where a session can be scheduled.
+              </CardDescription>
+            </div>
+            {canAddSlots && (
+              <div className="inline-flex rounded-lg border p-0.5 bg-muted/30 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('calendar')}
+                  className={cn(
+                    'inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
+                    viewMode === 'calendar'
+                      ? 'bg-background shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  Calendar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('list')}
+                  className={cn(
+                    'inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
+                    viewMode === 'list'
+                      ? 'bg-background shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  <List className="h-3.5 w-3.5" />
+                  List
+                </button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Prerequisites Check */}
@@ -916,8 +976,64 @@ export function ScheduleStep({ state, dispatch }: ScheduleStepProps) {
             </div>
           )}
 
+          {/* Calendar View */}
+          {canAddSlots && viewMode === 'calendar' && (
+            <div className="space-y-3">
+              {/* Calendar toolbar */}
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="calendar-venue" className="text-sm">
+                    Venue
+                  </Label>
+                  <select
+                    id="calendar-venue"
+                    value={calendarVenue}
+                    onChange={(e) => setCalendarVenue(e.target.value as string | 'all')}
+                    className={cn(
+                      'h-9 rounded-md border border-input bg-background px-3 text-sm',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    )}
+                  >
+                    <option value="all">All venues (bulk create)</option>
+                    {venues.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name}
+                      </option>
+                    ))}
+                  </select>
+                  {calendarVenue === 'all' && (
+                    <span className="text-xs text-muted-foreground">
+                      Creates one slot per venue ({venues.length})
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleAddSlot}>
+                    <Plus className="h-4 w-4 mr-1.5" />
+                    Add slot
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleShowBulkGenerator}>
+                    <Zap className="h-4 w-4 mr-1.5" />
+                    Bulk generate
+                  </Button>
+                </div>
+              </div>
+
+              {/* The calendar */}
+              <ScheduleCalendar
+                eventDates={eventDates}
+                venues={venues}
+                slots={schedule.timeSlots}
+                selectedVenueId={calendarVenue}
+                onCreateSlot={handleCalendarCreate}
+                onEditSlot={handleEditSlot}
+                onDeleteSlot={handleDeleteSlot}
+              />
+            </div>
+          )}
+
           {/* Time Slots by Date */}
-          {canAddSlots && Object.keys(slotsByDate).length > 0 && (
+          {canAddSlots && viewMode === 'list' && Object.keys(slotsByDate).length > 0 && (
             <div className="space-y-4">
               {eventDates
                 .filter((date) => slotsByDate[date]?.length > 0)
@@ -946,8 +1062,8 @@ export function ScheduleStep({ state, dispatch }: ScheduleStepProps) {
             </div>
           )}
 
-          {/* Empty State */}
-          {canAddSlots && schedule.timeSlots.length === 0 && !showForm && !showBulkGenerator && (
+          {/* Empty State (list only) */}
+          {canAddSlots && viewMode === 'list' && schedule.timeSlots.length === 0 && !showForm && !showBulkGenerator && (
             <div className="text-center py-8 border-2 border-dashed rounded-lg">
               <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
               <p className="text-muted-foreground mb-4">
@@ -966,8 +1082,8 @@ export function ScheduleStep({ state, dispatch }: ScheduleStepProps) {
             </div>
           )}
 
-          {/* Action Buttons (when slots exist) */}
-          {canAddSlots && schedule.timeSlots.length > 0 && !showForm && !showBulkGenerator && (
+          {/* Action Buttons (list view only) */}
+          {canAddSlots && viewMode === 'list' && schedule.timeSlots.length > 0 && !showForm && !showBulkGenerator && (
             <div className="flex gap-3">
               <Button onClick={handleAddSlot} variant="outline">
                 <Plus className="h-4 w-4 mr-2" />

@@ -14,11 +14,14 @@ import {
   GripVertical,
   Check,
   X,
+  CreditCard,
+  AlertTriangle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AdminNav } from '@/components/admin/AdminNav'
 import { useEvent, useEventRole } from '@/contexts/EventContext'
 import { cn } from '@/lib/utils'
@@ -67,6 +70,65 @@ export default function AdminTicketsPage() {
   const [editingTier, setEditingTier] = React.useState<TicketTier | null>(null)
   const [isCreating, setIsCreating] = React.useState(false)
   const [isSaving, setIsSaving] = React.useState(false)
+
+  // Ticketing settings state
+  const [settings, setSettings] = React.useState<{
+    ticketing_enabled: boolean
+    stripe_account_id: string | null
+    platform_stripe_configured: boolean
+    webhook_configured: boolean
+  } | null>(null)
+  const [isTogglingTicketing, setIsTogglingTicketing] = React.useState(false)
+
+  // Fetch ticketing settings
+  React.useEffect(() => {
+    const fetchSettings = async () => {
+      const token = getAccessToken()
+      if (!token) return
+      try {
+        const response = await fetch(
+          `/api/v1/events/${eventSlug}/admin/ticketing-settings`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        )
+        if (response.ok) {
+          const data = await response.json()
+          setSettings(data)
+        }
+      } catch (err) {
+        console.error('Error fetching ticketing settings:', err)
+      }
+    }
+    fetchSettings()
+  }, [eventSlug])
+
+  const handleToggleTicketing = async () => {
+    if (!settings) return
+    const token = getAccessToken()
+    if (!token) return
+
+    setIsTogglingTicketing(true)
+    try {
+      const response = await fetch(
+        `/api/v1/events/${eventSlug}/admin/ticketing-settings`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ ticketing_enabled: !settings.ticketing_enabled }),
+        },
+      )
+      if (response.ok) {
+        const data = await response.json()
+        setSettings((prev) => (prev ? { ...prev, ...data } : data))
+      }
+    } catch (err) {
+      console.error('Error toggling ticketing:', err)
+    } finally {
+      setIsTogglingTicketing(false)
+    }
+  }
 
   // Form state
   const [formName, setFormName] = React.useState('')
@@ -302,6 +364,82 @@ export default function AdminTicketsPage() {
               Add Tier
             </Button>
           </div>
+
+          {/* Ticketing Settings */}
+          {settings && (
+            <Card>
+              <CardContent className="py-4 space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10 mt-0.5">
+                      <CreditCard className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Ticket sales</h3>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {settings.ticketing_enabled
+                          ? 'Attendees can purchase tickets from the public tickets page.'
+                          : 'Ticket sales are disabled. Enable to let attendees buy tickets.'}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant={settings.ticketing_enabled ? 'outline' : 'default'}
+                    size="sm"
+                    onClick={handleToggleTicketing}
+                    disabled={isTogglingTicketing}
+                  >
+                    {isTogglingTicketing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : settings.ticketing_enabled ? (
+                      'Disable'
+                    ) : (
+                      'Enable ticketing'
+                    )}
+                  </Button>
+                </div>
+
+                {/* Stripe status */}
+                {settings.ticketing_enabled && !settings.platform_stripe_configured && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      Stripe isn&apos;t configured on this deployment. Set{' '}
+                      <code className="text-xs">STRIPE_SECRET_KEY</code> (and{' '}
+                      <code className="text-xs">STRIPE_WEBHOOK_SECRET</code>) in
+                      environment variables before accepting paid tickets. Free
+                      tickets still work.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {settings.ticketing_enabled &&
+                  settings.platform_stripe_configured &&
+                  !settings.webhook_configured && (
+                    <Alert>
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        Stripe webhooks are not configured. Set{' '}
+                        <code className="text-xs">STRIPE_WEBHOOK_SECRET</code> and
+                        point Stripe at <code className="text-xs">/api/webhooks/stripe</code>{' '}
+                        so purchases are automatically confirmed.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                {settings.ticketing_enabled &&
+                  settings.platform_stripe_configured &&
+                  settings.webhook_configured &&
+                  !settings.stripe_account_id && (
+                    <p className="text-xs text-muted-foreground">
+                      Payments route to the platform Stripe account. A per-event
+                      Stripe Connect flow is not yet available; reach out to the
+                      operators to attach a custom account.
+                    </p>
+                  )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Stats */}
           <div className="grid gap-4 md:grid-cols-3">

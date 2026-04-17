@@ -6,8 +6,17 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { Resend } from 'resend'
 import { createAdminClient } from '@/lib/supabase/server'
 import { getUserFromRequest } from '@/lib/api/getUser'
+import { buildEventInvitationEmail } from '@/lib/email/notification-emails'
+
+// Lazy-init Resend client so build/import doesn't require RESEND_API_KEY
+let _resend: Resend | null = null
+function getResend() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY)
+  return _resend
+}
 
 export async function POST(
   request: NextRequest,
@@ -22,10 +31,10 @@ export async function POST(
 
   const supabase = await createAdminClient()
 
-  // Get event
+  // Get event (include logo/dates/location for email branding)
   const { data: event, error: eventError } = await supabase
     .from('events')
-    .select('id, name, visibility')
+    .select('id, name, slug, visibility, logo_url, start_date, end_date, location_name')
     .eq('slug', slug)
     .single()
 
@@ -39,11 +48,19 @@ export async function POST(
     .select('role')
     .eq('event_id', event.id)
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
   if (!membership || !['owner', 'admin'].includes(membership.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
+
+  // Fetch inviter display name for email
+  const { data: inviterProfile } = await supabase
+    .from('profiles')
+    .select('display_name, email')
+    .eq('id', user.id)
+    .maybeSingle()
+  const inviterName = inviterProfile?.display_name || inviterProfile?.email || 'An event organizer'
 
   // Parse request
   let body: { emails?: string[]; role?: string; expiresInDays?: number }
@@ -96,12 +113,76 @@ export async function POST(
     return NextResponse.json({ error: 'Failed to create invitations' }, { status: 500 })
   }
 
+  // Send invitation emails for any email-specific invitations
+  const emailResults: { email: string; sent: boolean; error?: string }[] = []
+  const toEmail = (created || []).filter((i) => !!i.email)
+
+  if (toEmail.length > 0) {
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'hello@schellingpoint.city'
+    const fromName = event.name || 'Schelling Point'
+
+    // Format event date range for footer
+    let dateRange: string | undefined
+    if (event.start_date && event.end_date) {
+      const eventStart = new Date(event.start_date)
+      const eventEnd = new Date(event.end_date)
+      const startMonth = eventStart.toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' })
+      const endMonth = eventEnd.toLocaleDateString('en-US', { month: 'long', timeZone: 'UTC' })
+      const startDay = eventStart.getUTCDate()
+      const endDay = eventEnd.getUTCDate()
+      const year = eventStart.getUTCFullYear()
+      dateRange = startMonth === endMonth
+        ? `${startMonth} ${startDay}-${endDay}, ${year}`
+        : `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`
+    }
+
+    const eventInfo = {
+      name: event.name,
+      slug: event.slug,
+      logoUrl: event.logo_url || undefined,
+      dateRange,
+      location: event.location_name || undefined,
+    }
+
+    for (const inv of toEmail) {
+      try {
+        const { subject, html } = buildEventInvitationEmail({
+          event: eventInfo,
+          inviteeEmail: inv.email!,
+          inviterName,
+          role: inv.role,
+          inviteToken: inv.token,
+          expiresAt: inv.expires_at,
+        })
+
+        const { error: sendError } = await getResend().emails.send({
+          from: `${fromName} <${fromEmail}>`,
+          to: inv.email!,
+          subject,
+          html,
+        })
+
+        if (sendError) {
+          console.error(`Failed to send invitation email to ${inv.email}:`, sendError)
+          emailResults.push({ email: inv.email!, sent: false, error: sendError.message })
+        } else {
+          emailResults.push({ email: inv.email!, sent: true })
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error'
+        console.error(`Failed to send invitation email to ${inv.email}:`, err)
+        emailResults.push({ email: inv.email!, sent: false, error: message })
+      }
+    }
+  }
+
   return NextResponse.json({
     success: true,
     invitations: created,
     inviteUrl: created && created.length === 1 && !created[0].email
       ? `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/invite/e/${created[0].token}`
       : null,
+    emailResults: emailResults.length > 0 ? emailResults : undefined,
   })
 }
 
@@ -135,7 +216,7 @@ export async function GET(
     .select('role')
     .eq('event_id', event.id)
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
   if (!membership || !['owner', 'admin'].includes(membership.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

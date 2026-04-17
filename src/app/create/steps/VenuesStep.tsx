@@ -119,11 +119,20 @@ function VenueCard({ venue, onEdit, onDelete }: VenueCardProps) {
       {/* Features */}
       {venue.features.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {venue.features.map((feature) => (
-            <Badge key={feature} variant="secondary" className="text-xs">
-              {VENUE_FEATURES.find((f) => f.value === feature)?.label || feature}
-            </Badge>
-          ))}
+          {venue.features.map((feature) => {
+            const preset = VENUE_FEATURES.find((f) => f.value === feature);
+            const label = preset
+              ? preset.label
+              : feature
+                  .split('-')
+                  .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                  .join(' ');
+            return (
+              <Badge key={feature} variant="secondary" className="text-xs">
+                {label}
+              </Badge>
+            );
+          })}
         </div>
       )}
 
@@ -180,6 +189,7 @@ function VenueForm({ initialData, onSubmit, onCancel, isEditing }: VenueFormProp
   });
 
   const [error, setError] = React.useState<string | null>(null);
+  const [customFeatureInput, setCustomFeatureInput] = React.useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -201,6 +211,35 @@ function VenueForm({ initialData, onSubmit, onCancel, isEditing }: VenueFormProp
         : [...prev.features, feature],
     }));
   };
+
+  const normalizeFeatureValue = (raw: string) =>
+    raw
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+
+  const handleAddCustomFeature = () => {
+    const value = normalizeFeatureValue(customFeatureInput);
+    if (!value) return;
+    if (!formData.features.includes(value)) {
+      setFormData((prev) => ({ ...prev, features: [...prev.features, value] }));
+    }
+    setCustomFeatureInput('');
+  };
+
+  const handleRemoveCustomFeature = (feature: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      features: prev.features.filter((f) => f !== feature),
+    }));
+  };
+
+  const humanizeFeature = (value: string) =>
+    value
+      .split('-')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -240,7 +279,7 @@ function VenueForm({ initialData, onSubmit, onCancel, isEditing }: VenueFormProp
       </div>
 
       {/* Features */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <Label>Features</Label>
         <div className="flex flex-wrap gap-2">
           {VENUE_FEATURES.map((feature) => (
@@ -258,6 +297,53 @@ function VenueForm({ initialData, onSubmit, onCancel, isEditing }: VenueFormProp
               {feature.label}
             </button>
           ))}
+
+          {/* Custom features selected on this venue */}
+          {formData.features
+            .filter((v) => !VENUE_FEATURES.some((f) => f.value === v))
+            .map((value) => (
+              <span
+                key={value}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border border-primary bg-primary/10 text-primary"
+              >
+                {humanizeFeature(value)}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveCustomFeature(value)}
+                  className="text-primary/70 hover:text-destructive transition-colors"
+                  aria-label={`Remove ${humanizeFeature(value)}`}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            ))}
+        </div>
+
+        {/* Add custom feature */}
+        <div className="flex gap-2 items-center">
+          <Input
+            placeholder="Add custom feature (e.g., standing desk)"
+            value={customFeatureInput}
+            onChange={(e) => setCustomFeatureInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAddCustomFeature();
+              }
+            }}
+            maxLength={40}
+            className="max-w-xs"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleAddCustomFeature}
+            disabled={!customFeatureInput.trim()}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Add
+          </Button>
         </div>
       </div>
 
