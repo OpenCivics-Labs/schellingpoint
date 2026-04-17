@@ -37,7 +37,7 @@ export async function DELETE(
     .select('role')
     .eq('event_id', event.id)
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
   if (!membership || !['owner', 'admin'].includes(membership.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

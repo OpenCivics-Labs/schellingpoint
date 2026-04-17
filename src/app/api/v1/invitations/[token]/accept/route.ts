@@ -46,15 +46,26 @@ export async function POST(
     return NextResponse.json({ error: 'Invitation has expired' }, { status: 400 })
   }
 
-  // If email-specific, verify email matches
+  // If email-specific, verify email matches.
+  // Check the user's profile email first, then fall back to auth.users email
+  // (which is the source of truth since we require email auth).
   if (invitation.email) {
+    let userEmail: string | null = null
+
     const { data: profile } = await supabase
-      .from('user_data')
+      .from('profiles')
       .select('email')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (profile?.email?.toLowerCase() !== invitation.email.toLowerCase()) {
+    userEmail = profile?.email ?? null
+
+    // Fallback to auth user email (always present)
+    if (!userEmail && user.email) {
+      userEmail = user.email
+    }
+
+    if (!userEmail || userEmail.toLowerCase() !== invitation.email.toLowerCase()) {
       return NextResponse.json({
         error: 'This invitation was sent to a different email address'
       }, { status: 403 })
@@ -67,7 +78,7 @@ export async function POST(
     .select('id')
     .eq('event_id', invitation.event_id)
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
 
   if (existingMember) {
     // Mark invitation as accepted anyway (for email invitations)

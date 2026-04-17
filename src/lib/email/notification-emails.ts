@@ -165,6 +165,54 @@ export function buildCohostInviteEmail(params: CohostInviteEmailParams) {
   }
 }
 
+// =============================================================================
+// EVENT INVITATION EMAIL
+// =============================================================================
+
+interface EventInvitationEmailParams {
+  event: EventInfo
+  inviteeEmail: string
+  inviterName: string
+  role: string
+  inviteToken: string
+  expiresAt: string
+}
+
+export function buildEventInvitationEmail(params: EventInvitationEmailParams) {
+  const { event, inviteeEmail, inviterName, role, inviteToken, expiresAt } = params
+
+  const expiresDate = new Date(expiresAt)
+  const expiresText = expiresDate.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
+
+  const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1)
+
+  const baseParams: BaseEmailParams = {
+    eventName: event.name,
+    eventLogoUrl: event.logoUrl,
+    eventDateRange: event.dateRange,
+    eventLocation: event.location,
+    previewText: `${inviterName} invited you to join ${event.name}`,
+    heading: `You're invited!`,
+    bodyHtml: `
+      <p style="margin: 0 0 16px 0;">Hey there,</p>
+      <p style="margin: 0 0 16px 0;"><strong style="color: #ffffff;">${inviterName}</strong> has invited you to join <strong style="color: #ffffff;">${event.name}</strong> as a <strong style="color: #ffffff;">${roleDisplay}</strong>.</p>
+      <p style="margin: 0 0 16px 0;">Click the button below to accept your invitation and join the event.</p>
+    `,
+    ctaUrl: `${appUrl}/invite/e/${inviteToken}`,
+    ctaText: 'Accept Invitation',
+    footerNote: `This invitation was sent to ${inviteeEmail} and expires on ${expiresText}.`,
+  }
+
+  return {
+    subject: `You're invited to join ${event.name}`,
+    html: buildBaseEmail(baseParams),
+  }
+}
+
 interface CohostResponseEmailParams {
   event: EventInfo
   hostName: string
